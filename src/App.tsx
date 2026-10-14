@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import './App.css'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { AppSidebar } from '@/components/app-sidebar'
 import { LoginForm } from '@/components/login-form'
 import {
@@ -9,7 +9,8 @@ import {
 } from '@/components/ui/sidebar'
 import { Users, CalendarCheck2, BookOpenCheck, ChartNoAxesColumnIncreasing } from 'lucide-react'
 
-function LoginScreen({ onLogin }: { onLogin: () => void }) {
+export function LoginPage() {
+  const navigate = useNavigate()
   return (
     <main className="login-screen">
       <div className="login-brand">
@@ -17,14 +18,15 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
         <span>Asistencia</span>
       </div>
       <div className="login-content">
-        <LoginForm onSubmit={(event) => { event.preventDefault(); onLogin() }} />
+        <LoginForm onSubmit={(event) => { event.preventDefault(); void navigate({ to: '/dashboard' }) }} />
         <p className="demo-note">Vista de demostración · el acceso no se valida con un servidor</p>
       </div>
     </main>
   )
 }
 
-function Dashboard({ onLogout }: { onLogout: () => void }) {
+export function DashboardPage() {
+  const navigate = useNavigate()
   const formattedDate = new Intl.DateTimeFormat('es-BO', {
     weekday: 'long', day: 'numeric', month: 'long',
   }).format(new Date())
@@ -37,7 +39,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   return (
     <SidebarProvider>
-      <AppSidebar onLogout={onLogout} />
+      <AppSidebar onLogout={() => { void navigate({ to: '/' }) }} />
       <SidebarInset>
         <header className="dashboard-header">
           <SidebarTrigger />
@@ -72,6 +74,13 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             </div>
             <span className="status-pill"><span /> Sistema listo</span>
           </section>
+          <Link
+            className="dynamic-route-link"
+            to="/students/$studentId"
+            params={{ studentId: 'est-001' }}
+          >
+            Ver ficha dinámica de estudiante
+          </Link>
           <p className="demo-note">Panel de demostración · todavía no está conectado a datos reales</p>
         </main>
       </SidebarInset>
@@ -79,11 +88,3 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   )
 }
 
-function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  return isLoggedIn
-    ? <Dashboard onLogout={() => setIsLoggedIn(false)} />
-    : <LoginScreen onLogin={() => setIsLoggedIn(true)} />
-}
-
-export default App
