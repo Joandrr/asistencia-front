@@ -13,7 +13,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon } from "lucide-react"
+import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon, Users } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 
 // This is sample data.
@@ -82,10 +82,6 @@ const data = {
       ),
       items: [
         {
-          title: "Estudiantes",
-          url: "/students",
-        },
-        {
           title: "Cursos",
           url: "#",
         },
@@ -112,14 +108,15 @@ const data = {
           url: "#",
         },
         {
-          title: "Estudiantes",
-          url: "#",
-        },
-        {
           title: "Exportaciones",
           url: "#",
         },
       ],
+    },
+    {
+      title: "Usuarios",
+      url: "/users",
+      icon: <Users />,
     },
     {
       title: "Configuración",
@@ -178,6 +175,7 @@ const data = {
 
 export function AppSidebar({ onLogout, onProfile, ...props }: React.ComponentProps<typeof Sidebar> & { onLogout?: () => void; onProfile?: () => void }) {
   const user = useAuthStore((state) => state.user)
+  const navMain = data.navMain.filter((group) => group.url !== "/users" || user?.role === "admin")
   const displayName = user?.fullName || user?.registrationNo || "Usuario"
   const displayRole = user?.role === "admin" ? "Administrador" : "Estudiante"
   return (
@@ -186,7 +184,7 @@ export function AppSidebar({ onLogout, onProfile, ...props }: React.ComponentPro
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} />
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>

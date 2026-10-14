@@ -77,7 +77,7 @@ function ProfilePage() {
 
   return (
     <main className="dashboard-content">
-      <section className="students-heading">
+      <section className="profile-heading">
         <div>
           <p className="eyebrow">CUENTA</p>
           <h2>Mi perfil</h2>

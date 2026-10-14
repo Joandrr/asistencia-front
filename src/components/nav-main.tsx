@@ -34,7 +34,17 @@ export function NavMain({
     <SidebarGroup>
       <SidebarGroupLabel>Menú principal</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => (
+        {items.map((item) => item.url !== "#" ? (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton
+              tooltip={item.title}
+              render={item.url === "/users" ? <Link to="/users" /> : <a href={item.url} />}
+            >
+              {item.icon}
+              <span>{item.title}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ) : (
           <Collapsible
             key={item.title}
             defaultOpen={item.isActive}
@@ -52,11 +62,7 @@ export function NavMain({
               <SidebarMenuSub>
                 {item.items?.map((subItem) => (
                   <SidebarMenuSubItem key={subItem.title}>
-                    <SidebarMenuSubButton
-                      render={subItem.url === "/students"
-                        ? <Link to="/students" />
-                        : <a href={subItem.url} />}
-                    >
+                    <SidebarMenuSubButton render={<a href={subItem.url} />}>
                       <span>{subItem.title}</span>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>

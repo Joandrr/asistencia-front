@@ -1,10 +1,9 @@
 /* eslint-disable react-refresh/only-export-components -- TanStack file routes export Route and their component from one module. */
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import {
   BookOpenCheck,
   CalendarCheck2,
   ChartNoAxesColumnIncreasing,
-  Users,
 } from 'lucide-react'
 
 export const Route = createFileRoute('/_dashboard/dashboard')({
@@ -19,7 +18,6 @@ function DashboardPage() {
   }).format(new Date())
 
   const stats = [
-    { label: 'Estudiantes', value: '248', detail: 'Inscritos este periodo', icon: Users },
     { label: 'Asistencia de hoy', value: '92%', detail: 'En todos los cursos', icon: CalendarCheck2 },
     { label: 'Cursos activos', value: '12', detail: 'En el periodo actual', icon: BookOpenCheck },
     { label: 'A tiempo', value: '+4.8%', detail: 'Respecto al mes pasado', icon: ChartNoAxesColumnIncreasing },
@@ -52,13 +50,6 @@ function DashboardPage() {
         </div>
         <span className="status-pill"><span /> Sistema listo</span>
       </section>
-      <Link
-        className="dynamic-route-link"
-        to="/students/$studentId"
-        params={{ studentId: 'est-001' }}
-      >
-        Ver ficha dinámica de estudiante
-      </Link>
       <p className="demo-note">Panel de demostración · todavía no está conectado a datos reales</p>
     </main>
   )
