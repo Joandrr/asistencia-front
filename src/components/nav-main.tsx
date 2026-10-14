@@ -8,7 +8,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-export type NavRoute = "/dashboard" | "/attendance" | "/students" | "/modules" | "/users"
+export type NavRoute = "/dashboard" | "/attendance" | "/students" | "/activities" | "/modules" | "/users"
 
 export interface NavItem {
   title: string

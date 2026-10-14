@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react"
 import { Link } from "@tanstack/react-router"
-import { CalendarCheck2, ClipboardCheck, FolderUp, GraduationCap, Users } from "lucide-react"
+import { CalendarCheck2, ClipboardCheck, FolderUp, GraduationCap, History, Users } from "lucide-react"
 import { NavMain, type NavItem } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -18,6 +18,7 @@ import { useAuthStore } from "@/stores/auth-store"
 const ADMIN_NAV: NavItem[] = [
   { title: "Asistencias", url: "/attendance", icon: <ClipboardCheck /> },
   { title: "Estudiantes", url: "/students", icon: <GraduationCap /> },
+  { title: "Actividades", url: "/activities", icon: <History /> },
   { title: "Módulos", url: "/modules", icon: <FolderUp /> },
   { title: "Usuarios", url: "/users", icon: <Users /> },
 ]

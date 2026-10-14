@@ -56,6 +56,7 @@ export interface ModuleHistoryStats {
 export interface ModuleHistory {
   moduleId: string
   moduleName: string
+  isActive?: boolean
   stats: ModuleHistoryStats
   records: ClassHistoryRecord[]
 }
