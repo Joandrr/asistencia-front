@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardRouteRouteImport } from './routes/_dashboard/route'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
 import { Route as DashboardProfileRouteImport } from './routes/_dashboard/profile'
+import { Route as DashboardActivitiesIndexRouteImport } from './routes/_dashboard/activities/index'
 import { Route as DashboardAttendanceIndexRouteImport } from './routes/_dashboard/attendance/index'
 import { Route as DashboardModulesIndexRouteImport } from './routes/_dashboard/modules/index'
 import { Route as DashboardStudentsIndexRouteImport } from './routes/_dashboard/students/index'
@@ -37,6 +38,12 @@ const DashboardProfileRoute = DashboardProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardActivitiesIndexRoute =
+  DashboardActivitiesIndexRouteImport.update({
+    id: '/activities/',
+    path: '/activities/',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
 const DashboardAttendanceIndexRoute =
   DashboardAttendanceIndexRouteImport.update({
     id: '/attendance/',
@@ -63,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardDashboardRoute
   '/profile': typeof DashboardProfileRoute
+  '/activities/': typeof DashboardActivitiesIndexRoute
   '/attendance/': typeof DashboardAttendanceIndexRoute
   '/modules/': typeof DashboardModulesIndexRoute
   '/students/': typeof DashboardStudentsIndexRoute
@@ -72,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardDashboardRoute
   '/profile': typeof DashboardProfileRoute
+  '/activities': typeof DashboardActivitiesIndexRoute
   '/attendance': typeof DashboardAttendanceIndexRoute
   '/modules': typeof DashboardModulesIndexRoute
   '/students': typeof DashboardStudentsIndexRoute
@@ -83,6 +92,7 @@ export interface FileRoutesById {
   '/_dashboard': typeof DashboardRouteRouteWithChildren
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
   '/_dashboard/profile': typeof DashboardProfileRoute
+  '/_dashboard/activities/': typeof DashboardActivitiesIndexRoute
   '/_dashboard/attendance/': typeof DashboardAttendanceIndexRoute
   '/_dashboard/modules/': typeof DashboardModulesIndexRoute
   '/_dashboard/students/': typeof DashboardStudentsIndexRoute
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/profile'
+    | '/activities/'
     | '/attendance/'
     | '/modules/'
     | '/students/'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/profile'
+    | '/activities'
     | '/attendance'
     | '/modules'
     | '/students'
@@ -113,6 +125,7 @@ export interface FileRouteTypes {
     | '/_dashboard'
     | '/_dashboard/dashboard'
     | '/_dashboard/profile'
+    | '/_dashboard/activities/'
     | '/_dashboard/attendance/'
     | '/_dashboard/modules/'
     | '/_dashboard/students/'
@@ -154,6 +167,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProfileRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/_dashboard/activities/': {
+      id: '/_dashboard/activities/'
+      path: '/activities'
+      fullPath: '/activities/'
+      preLoaderRoute: typeof DashboardActivitiesIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/_dashboard/attendance/': {
       id: '/_dashboard/attendance/'
       path: '/attendance'
@@ -188,6 +208,7 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteRouteChildren {
   DashboardDashboardRoute: typeof DashboardDashboardRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
+  DashboardActivitiesIndexRoute: typeof DashboardActivitiesIndexRoute
   DashboardAttendanceIndexRoute: typeof DashboardAttendanceIndexRoute
   DashboardModulesIndexRoute: typeof DashboardModulesIndexRoute
   DashboardStudentsIndexRoute: typeof DashboardStudentsIndexRoute
@@ -197,6 +218,7 @@ interface DashboardRouteRouteChildren {
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardDashboardRoute: DashboardDashboardRoute,
   DashboardProfileRoute: DashboardProfileRoute,
+  DashboardActivitiesIndexRoute: DashboardActivitiesIndexRoute,
   DashboardAttendanceIndexRoute: DashboardAttendanceIndexRoute,
   DashboardModulesIndexRoute: DashboardModulesIndexRoute,
   DashboardStudentsIndexRoute: DashboardStudentsIndexRoute,

@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- TanStack file routes export Route and their component from one module. */
 import { useState, useEffect } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
@@ -510,7 +510,22 @@ function AdminDashboard() {
         ))}
       </section>
 
-      <section className="activity-card">
+      <section className="activity-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '1.25rem' }}>
+        <div>
+          <p className="eyebrow">AUDITORÍA Y CONTROL (RF-09 / RF-10)</p>
+          <h2>Historial de Actividades</h2>
+          <p>Supervisa las marcas de estudiantes y las modificaciones administrativas del módulo activo.</p>
+        </div>
+        <Link
+          to="/activities"
+          className="btn-mark btn-mark-ready"
+          style={{ width: 'auto', margin: 0, padding: '0.65rem 1.25rem', gap: '0.5rem', textDecoration: 'none' }}
+        >
+          <History size={18} /> Ver Historial de Actividades
+        </Link>
+      </section>
+
+      <section className="activity-card" style={{ marginTop: '1.25rem' }}>
         <div>
           <p className="eyebrow">ADMINISTRACIÓN</p>
           <h2>Módulo de Asistencia Estudiantil Operativo</h2>
