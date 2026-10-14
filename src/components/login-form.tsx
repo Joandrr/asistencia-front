@@ -36,18 +36,20 @@ export function LoginForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!/^[0-9]{7,12}$/.test(registration)) {
+    if (!/^[0-9]{6,12}$/.test(registration)) {
       event.preventDefault()
       showRegistrationError(
         registration
-          ? "El registro debe contener solo números (entre 7 y 12 dígitos)."
+          ? "El registro debe contener solo números (entre 6 y 12 dígitos)."
           : "El registro es obligatorio.",
       )
       return
     }
-    if (password.length < 8) {
+    // Minimum length is a rule for creating passwords, not for signing in:
+    // imported students start with their registration number (6+ digits).
+    if (!password) {
       event.preventDefault()
-      setPasswordError("La contraseña debe tener al menos 8 caracteres.")
+      setPasswordError("La contraseña es obligatoria.")
       return
     }
 
@@ -77,7 +79,7 @@ export function LoginForm({
                   inputMode="numeric"
                   autoComplete="username"
                   placeholder="Ingresa tu número de registro"
-                  pattern="[0-9]{7,12}"
+                  pattern="[0-9]{6,12}"
                   maxLength={12}
                   onChange={(event) => {
                     const rawValue = event.currentTarget.value
@@ -86,8 +88,8 @@ export function LoginForm({
                     if (/\D/.test(rawValue)) {
                       showRegistrationError("Solo se permiten números.")
                     } else {
-                      setRegistrationError(digitsOnly.length > 0 && digitsOnly.length < 7
-                        ? "El registro debe tener al menos 7 dígitos."
+                      setRegistrationError(digitsOnly.length > 0 && digitsOnly.length < 6
+                        ? "El registro debe tener al menos 6 dígitos."
                         : "")
                     }
                   }}
@@ -113,16 +115,13 @@ export function LoginForm({
                   name="password"
                   type="password"
                   autoComplete="current-password"
-                  minLength={8}
                   value={password}
                   aria-invalid={Boolean(passwordError)}
                   aria-describedby={passwordError ? "password-error" : undefined}
                   onChange={(event) => {
                     const nextPassword = event.currentTarget.value
                     setPassword(nextPassword)
-                    setPasswordError(nextPassword.length > 0 && nextPassword.length < 8
-                      ? "La contraseña debe tener al menos 8 caracteres."
-                      : "")
+                    setPasswordError("")
                   }}
                   required
                 />
@@ -136,7 +135,7 @@ export function LoginForm({
                 {errorMessage && <p className="registration-error" role="alert">{errorMessage}</p>}
                 <Button
                   type="submit"
-                  disabled={isSubmitting || !/^[0-9]{7,12}$/.test(registration) || password.length < 8 || Boolean(registrationError)}
+                  disabled={isSubmitting || !/^[0-9]{6,12}$/.test(registration) || !password || Boolean(registrationError)}
                 >
                   {isSubmitting ? "Iniciando sesión…" : "Iniciar sesión"}
                 </Button>

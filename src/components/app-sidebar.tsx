@@ -182,7 +182,29 @@ const data = {
 
 export function AppSidebar({ onLogout, onProfile, ...props }: React.ComponentProps<typeof Sidebar> & { onLogout?: () => void; onProfile?: () => void }) {
   const user = useAuthStore((state) => state.user)
-  const navMain = data.navMain.filter((group) => !ADMIN_ONLY_URLS.has(group.url) || user?.role === "admin")
+  const isStudent = user?.role === "student"
+
+  const studentNav = [
+    {
+      title: "Asistencia",
+      url: "/dashboard",
+      icon: <TerminalSquareIcon />,
+      isActive: true,
+      items: [
+        {
+          title: "Mis Clases de Hoy",
+          url: "/dashboard",
+        },
+        {
+          title: "Historial por Materia",
+          url: "/dashboard",
+        },
+      ],
+    },
+  ]
+
+  const adminNav = data.navMain.filter((group) => !ADMIN_ONLY_URLS.has(group.url) || user?.role === "admin")
+  const navMain = isStudent ? studentNav : adminNav
   const displayName = user?.fullName || user?.registrationNo || "Usuario"
   const displayRole = user?.role === "admin" ? "Administrador" : "Estudiante"
   return (
@@ -192,7 +214,7 @@ export function AppSidebar({ onLogout, onProfile, ...props }: React.ComponentPro
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} />
-        <NavProjects projects={data.projects} />
+        {!isStudent && <NavProjects projects={data.projects} />}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={{ ...data.user, name: displayName, email: `${displayRole} · ${user?.registrationNo ?? ""}` }} onLogout={onLogout} onProfile={onProfile} />
