@@ -307,7 +307,7 @@ function UserForm({
   const [fullName, setFullName] = useState(user?.fullName ?? '')
   const [degreeProgram, setDegreeProgram] = useState(user?.degreeProgram ?? '')
   const [formError, setFormError] = useState('')
-  const registrationValid = /^\d{7,12}$/.test(registrationNo)
+  const registrationValid = /^\d{6,12}$/.test(registrationNo)
   const nameValid = Boolean(fullName.trim()) && fullName.trim().length <= 200
   const degreeValid = role === 'admin' || (Boolean(degreeProgram.trim()) && degreeProgram.trim().length <= 150)
   const passwordBytes = new TextEncoder().encode(password).length
@@ -317,7 +317,7 @@ function UserForm({
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setFormError('')
-    if (!registrationValid) return setFormError('El registro debe tener entre 7 y 12 dígitos.')
+    if (!registrationValid) return setFormError('El registro debe tener entre 6 y 12 dígitos.')
     if (!nameValid) return setFormError('El nombre es obligatorio y admite hasta 200 caracteres.')
     if (!degreeValid) return setFormError('El programa académico es obligatorio para estudiantes (máximo 150 caracteres).')
     if (!passwordValid) return setFormError(password.length < 8
@@ -348,7 +348,7 @@ function UserForm({
     <form className="user-form" onSubmit={submit} noValidate>
       <Field>
         <FieldLabel htmlFor="user-registration">Registro</FieldLabel>
-        <Input id="user-registration" inputMode="numeric" pattern="[0-9]{7,12}" maxLength={12} value={registrationNo} onChange={(event) => setRegistrationNo(event.currentTarget.value.replace(/\D/g, '').slice(0, 12))} aria-invalid={Boolean(registrationNo) && !registrationValid} required />
+        <Input id="user-registration" inputMode="numeric" pattern="[0-9]{6,12}" maxLength={12} value={registrationNo} onChange={(event) => setRegistrationNo(event.currentTarget.value.replace(/\D/g, '').slice(0, 12))} aria-invalid={Boolean(registrationNo) && !registrationValid} required />
       </Field>
       <Field>
         <FieldLabel htmlFor="user-name">Nombre completo</FieldLabel>

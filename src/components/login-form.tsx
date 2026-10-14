@@ -36,11 +36,11 @@ export function LoginForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!/^[0-9]{7,12}$/.test(registration)) {
+    if (!/^[0-9]{6,12}$/.test(registration)) {
       event.preventDefault()
       showRegistrationError(
         registration
-          ? "El registro debe contener solo números (entre 7 y 12 dígitos)."
+          ? "El registro debe contener solo números (entre 6 y 12 dígitos)."
           : "El registro es obligatorio.",
       )
       return
@@ -77,7 +77,7 @@ export function LoginForm({
                   inputMode="numeric"
                   autoComplete="username"
                   placeholder="Ingresa tu número de registro"
-                  pattern="[0-9]{7,12}"
+                  pattern="[0-9]{6,12}"
                   maxLength={12}
                   onChange={(event) => {
                     const rawValue = event.currentTarget.value
@@ -86,8 +86,8 @@ export function LoginForm({
                     if (/\D/.test(rawValue)) {
                       showRegistrationError("Solo se permiten números.")
                     } else {
-                      setRegistrationError(digitsOnly.length > 0 && digitsOnly.length < 7
-                        ? "El registro debe tener al menos 7 dígitos."
+                      setRegistrationError(digitsOnly.length > 0 && digitsOnly.length < 6
+                        ? "El registro debe tener al menos 6 dígitos."
                         : "")
                     }
                   }}
@@ -136,7 +136,7 @@ export function LoginForm({
                 {errorMessage && <p className="registration-error" role="alert">{errorMessage}</p>}
                 <Button
                   type="submit"
-                  disabled={isSubmitting || !/^[0-9]{7,12}$/.test(registration) || password.length < 8 || Boolean(registrationError)}
+                  disabled={isSubmitting || !/^[0-9]{6,12}$/.test(registration) || password.length < 8 || Boolean(registrationError)}
                 >
                   {isSubmitting ? "Iniciando sesión…" : "Iniciar sesión"}
                 </Button>
