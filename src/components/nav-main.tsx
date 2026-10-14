@@ -16,6 +16,13 @@ import {
 import { ChevronRightIcon } from "lucide-react"
 import { Link } from "@tanstack/react-router"
 
+const APP_ROUTES = ["/users", "/modules", "/students", "/attendance"] as const
+type AppRoute = (typeof APP_ROUTES)[number]
+
+function isAppRoute(url: string): url is AppRoute {
+  return (APP_ROUTES as readonly string[]).includes(url)
+}
+
 export function NavMain({
   items,
 }: {
@@ -38,7 +45,7 @@ export function NavMain({
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton
               tooltip={item.title}
-              render={item.url === "/users" || item.url === "/modules" ? <Link to={item.url} /> : <a href={item.url} />}
+              render={isAppRoute(item.url) ? <Link to={item.url} /> : <a href={item.url} />}
             >
               {item.icon}
               <span>{item.title}</span>

@@ -13,10 +13,10 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon, Users, FolderUp } from "lucide-react"
+import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon, Users, FolderUp, GraduationCap, ClipboardCheck } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 
-const ADMIN_ONLY_URLS = new Set(["/users", "/modules"])
+const ADMIN_ONLY_URLS = new Set(["/users", "/modules", "/students", "/attendance"])
 
 // This is sample data.
 const data = {
@@ -114,6 +114,16 @@ const data = {
           url: "#",
         },
       ],
+    },
+    {
+      title: "Estudiantes",
+      url: "/students",
+      icon: <GraduationCap />,
+    },
+    {
+      title: "Asistencias",
+      url: "/attendance",
+      icon: <ClipboardCheck />,
     },
     {
       title: "Usuarios",
