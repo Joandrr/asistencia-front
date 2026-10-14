@@ -45,9 +45,11 @@ export function LoginForm({
       )
       return
     }
-    if (password.length < 8) {
+    // Minimum length is a rule for creating passwords, not for signing in:
+    // imported students start with their registration number (6+ digits).
+    if (!password) {
       event.preventDefault()
-      setPasswordError("La contraseña debe tener al menos 8 caracteres.")
+      setPasswordError("La contraseña es obligatoria.")
       return
     }
 
@@ -113,16 +115,13 @@ export function LoginForm({
                   name="password"
                   type="password"
                   autoComplete="current-password"
-                  minLength={8}
                   value={password}
                   aria-invalid={Boolean(passwordError)}
                   aria-describedby={passwordError ? "password-error" : undefined}
                   onChange={(event) => {
                     const nextPassword = event.currentTarget.value
                     setPassword(nextPassword)
-                    setPasswordError(nextPassword.length > 0 && nextPassword.length < 8
-                      ? "La contraseña debe tener al menos 8 caracteres."
-                      : "")
+                    setPasswordError("")
                   }}
                   required
                 />
@@ -136,7 +135,7 @@ export function LoginForm({
                 {errorMessage && <p className="registration-error" role="alert">{errorMessage}</p>}
                 <Button
                   type="submit"
-                  disabled={isSubmitting || !/^[0-9]{6,12}$/.test(registration) || password.length < 8 || Boolean(registrationError)}
+                  disabled={isSubmitting || !/^[0-9]{6,12}$/.test(registration) || !password || Boolean(registrationError)}
                 >
                   {isSubmitting ? "Iniciando sesión…" : "Iniciar sesión"}
                 </Button>

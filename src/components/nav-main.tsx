@@ -38,7 +38,7 @@ export function NavMain({
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton
               tooltip={item.title}
-              render={item.url === "/users" ? <Link to="/users" /> : <a href={item.url} />}
+              render={item.url === "/users" || item.url === "/modules" ? <Link to={item.url} /> : <a href={item.url} />}
             >
               {item.icon}
               <span>{item.title}</span>

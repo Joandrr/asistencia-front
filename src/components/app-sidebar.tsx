@@ -13,8 +13,10 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon, Users } from "lucide-react"
+import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon, Users, FolderUp } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
+
+const ADMIN_ONLY_URLS = new Set(["/users", "/modules"])
 
 // This is sample data.
 const data = {
@@ -119,6 +121,11 @@ const data = {
       icon: <Users />,
     },
     {
+      title: "Nuevo módulo",
+      url: "/modules",
+      icon: <FolderUp />,
+    },
+    {
       title: "Configuración",
       url: "#",
       icon: (
@@ -196,7 +203,7 @@ export function AppSidebar({ onLogout, onProfile, ...props }: React.ComponentPro
     },
   ]
 
-  const adminNav = data.navMain.filter((group) => group.url !== "/users" || user?.role === "admin")
+  const adminNav = data.navMain.filter((group) => !ADMIN_ONLY_URLS.has(group.url) || user?.role === "admin")
   const navMain = isStudent ? studentNav : adminNav
   const displayName = user?.fullName || user?.registrationNo || "Usuario"
   const displayRole = user?.role === "admin" ? "Administrador" : "Estudiante"
