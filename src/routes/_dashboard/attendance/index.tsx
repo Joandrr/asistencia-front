@@ -8,6 +8,7 @@ import {
   CalendarDays,
   CircleCheck,
   CircleX,
+  Clock,
   ClipboardCheck,
   FileDown,
   Pencil,
@@ -166,9 +167,9 @@ function AttendancePage() {
 
       <section className="stats-grid" aria-label="Totales del módulo activo">
         <article className="stat-card">
-          <div className="stat-heading"><span>Presentes</span><CircleCheck aria-hidden="true" /></div>
-          <strong>{totals.present}</strong>
-          <p>Asistencias registradas en el módulo</p>
+          <div className="stat-heading"><span>Asistencias</span><CircleCheck aria-hidden="true" /></div>
+          <strong>{totals.present + totals.late}</strong>
+          <p>{totals.present} a tiempo · {totals.late} con atraso</p>
         </article>
         <article className="stat-card">
           <div className="stat-heading"><span>Faltas</span><CircleX aria-hidden="true" /></div>
@@ -557,12 +558,14 @@ function EditAttendanceForm({
   onSubmit: (status: CorrectableStatus, notes: string) => void
 }) {
   const notesId = useId()
-  const [status, setStatus] = useState<CorrectableStatus>(target.status === 'present' ? 'absent' : 'present')
+  // Start on the current state (save stays disabled until another one is picked).
+  const [status, setStatus] = useState<CorrectableStatus>(target.status === 'pending' ? 'present' : target.status)
   const [notes, setNotes] = useState('')
   const unchanged = status === target.status
 
   const options: Array<{ value: CorrectableStatus; label: string; icon: typeof CircleCheck }> = [
     { value: 'present', label: 'Presente', icon: CircleCheck },
+    { value: 'late', label: 'Atraso', icon: Clock },
     { value: 'absent', label: 'Falta', icon: CircleX },
   ]
 
@@ -610,6 +613,7 @@ function TotalsStrip({ totals, note, stale = false }: { totals: StatusTotals; no
   return (
     <div className={`attendance-admin-strip ${stale ? 'attendance-admin-stale' : ''}`} aria-label="Totales">
       <span className="badge-pill badge-success">Presentes {totals.present}</span>
+      <span className="badge-pill badge-warning">Atrasos {totals.late}</span>
       <span className="badge-pill badge-danger">Faltas {totals.absent}</span>
       <span className="badge-pill badge-neutral">Pendientes {totals.pending}</span>
       <span className="attendance-admin-strip-rate">Asistencia <strong>{formatRate(totals.rate)}</strong></span>

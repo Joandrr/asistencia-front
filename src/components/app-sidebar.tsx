@@ -1,233 +1,67 @@
-"use client"
-
-import * as React from "react"
-
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
+import type { ComponentProps } from "react"
+import { Link } from "@tanstack/react-router"
+import { CalendarCheck2, ClipboardCheck, FolderUp, GraduationCap, Users } from "lucide-react"
+import { NavMain, type NavItem } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon, Users, FolderUp, GraduationCap, ClipboardCheck } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 
-const ADMIN_ONLY_URLS = new Set(["/users", "/modules", "/students", "/attendance"])
+const ADMIN_NAV: NavItem[] = [
+  { title: "Asistencias", url: "/attendance", icon: <ClipboardCheck /> },
+  { title: "Estudiantes", url: "/students", icon: <GraduationCap /> },
+  { title: "Módulos", url: "/modules", icon: <FolderUp /> },
+  { title: "Usuarios", url: "/users", icon: <Users /> },
+]
 
-// This is sample data.
-const data = {
-  user: {
-    name: "Administrador",
-    email: "admin@institucion.edu",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  teams: [
-    {
-      name: "Institución",
-      logo: (
-        <GalleryVerticalEndIcon
-        />
-      ),
-      plan: "Panel académico",
-    },
-    {
-      name: "Sede Central",
-      logo: (
-        <AudioLinesIcon
-        />
-      ),
-      plan: "Unidad educativa",
-    },
-    {
-      name: "Docentes",
-      logo: (
-        <TerminalIcon
-        />
-      ),
-      plan: "Equipo",
-    },
-  ],
-  navMain: [
-    {
-      title: "Asistencia",
-      url: "#",
-      icon: (
-        <TerminalSquareIcon
-        />
-      ),
-      isActive: true,
-      items: [
-        {
-          title: "Registro diario",
-          url: "#",
-        },
-        {
-          title: "Justificaciones",
-          url: "#",
-        },
-        {
-          title: "Resumen semanal",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Académico",
-      url: "#",
-      icon: (
-        <BotIcon
-        />
-      ),
-      items: [
-        {
-          title: "Cursos",
-          url: "#",
-        },
-        {
-          title: "Docentes",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Reportes",
-      url: "#",
-      icon: (
-        <BookOpenIcon
-        />
-      ),
-      items: [
-        {
-          title: "Asistencia por curso",
-          url: "#",
-        },
-        {
-          title: "Asistencia mensual",
-          url: "#",
-        },
-        {
-          title: "Exportaciones",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Estudiantes",
-      url: "/students",
-      icon: <GraduationCap />,
-    },
-    {
-      title: "Asistencias",
-      url: "/attendance",
-      icon: <ClipboardCheck />,
-    },
-    {
-      title: "Usuarios",
-      url: "/users",
-      icon: <Users />,
-    },
-    {
-      title: "Nuevo módulo",
-      url: "/modules",
-      icon: <FolderUp />,
-    },
-    {
-      title: "Configuración",
-      url: "#",
-      icon: (
-        <Settings2Icon
-        />
-      ),
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Primaria",
-      url: "#",
-      icon: (
-        <FrameIcon
-        />
-      ),
-    },
-    {
-      name: "Secundaria",
-      url: "#",
-      icon: (
-        <PieChartIcon
-        />
-      ),
-    },
-    {
-      name: "Actividades",
-      url: "#",
-      icon: (
-        <MapIcon
-        />
-      ),
-    },
-  ],
-}
+const STUDENT_NAV: NavItem[] = [
+  { title: "Mi asistencia", url: "/dashboard", icon: <CalendarCheck2 /> },
+]
 
-export function AppSidebar({ onLogout, onProfile, ...props }: React.ComponentProps<typeof Sidebar> & { onLogout?: () => void; onProfile?: () => void }) {
+export function AppSidebar({
+  onLogout,
+  onProfile,
+  ...props
+}: ComponentProps<typeof Sidebar> & { onLogout: () => void; onProfile: () => void }) {
   const user = useAuthStore((state) => state.user)
-  const isStudent = user?.role === "student"
-
-  const studentNav = [
-    {
-      title: "Asistencia",
-      url: "/dashboard",
-      icon: <TerminalSquareIcon />,
-      isActive: true,
-      items: [
-        {
-          title: "Mis Clases de Hoy",
-          url: "/dashboard",
-        },
-        {
-          title: "Historial por Materia",
-          url: "/dashboard",
-        },
-      ],
-    },
-  ]
-
-  const adminNav = data.navMain.filter((group) => !ADMIN_ONLY_URLS.has(group.url) || user?.role === "admin")
-  const navMain = isStudent ? studentNav : adminNav
+  const isAdmin = user?.role === "admin"
   const displayName = user?.fullName || user?.registrationNo || "Usuario"
-  const displayRole = user?.role === "admin" ? "Administrador" : "Estudiante"
+  const displayRole = isAdmin ? "Administrador" : "Estudiante"
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" tooltip="Asistencia" render={<Link to={isAdmin ? "/attendance" : "/dashboard"} />}>
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <CalendarCheck2 className="size-4" aria-hidden="true" />
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">Asistencia</span>
+                <span className="truncate text-xs">Panel académico</span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
-        {!isStudent && <NavProjects projects={data.projects} />}
+        <NavMain items={isAdmin ? ADMIN_NAV : STUDENT_NAV} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={{ ...data.user, name: displayName, email: `${displayRole} · ${user?.registrationNo ?? ""}` }} onLogout={onLogout} onProfile={onProfile} />
+        <NavUser
+          user={{ name: displayName, detail: `${displayRole} · ${user?.registrationNo ?? ""}` }}
+          onLogout={onLogout}
+          onProfile={onProfile}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
