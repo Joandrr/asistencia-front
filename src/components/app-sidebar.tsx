@@ -82,7 +82,7 @@ const data = {
       items: [
         {
           title: "Estudiantes",
-          url: "#",
+          url: "/students",
         },
         {
           title: "Cursos",

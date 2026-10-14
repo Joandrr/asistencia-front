@@ -10,53 +10,74 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as StudentsStudentIdRouteImport } from './routes/students.$studentId'
+import { Route as DashboardRouteRouteImport } from './routes/_dashboard/route'
+import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
+import { Route as DashboardStudentsIndexRouteImport } from './routes/_dashboard/students/index'
+import { Route as DashboardStudentsStudentIdRouteImport } from './routes/_dashboard/students/$studentId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardRoute = DashboardRouteImport.update({
+const DashboardRouteRoute = DashboardRouteRouteImport.update({
+  id: '/_dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardDashboardRoute = DashboardDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => DashboardRouteRoute,
 } as any)
-const StudentsStudentIdRoute = StudentsStudentIdRouteImport.update({
-  id: '/students/$studentId',
-  path: '/students/$studentId',
-  getParentRoute: () => rootRouteImport,
+const DashboardStudentsIndexRoute = DashboardStudentsIndexRouteImport.update({
+  id: '/students/',
+  path: '/students/',
+  getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardStudentsStudentIdRoute =
+  DashboardStudentsStudentIdRouteImport.update({
+    id: '/students/$studentId',
+    path: '/students/$studentId',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/students/$studentId': typeof StudentsStudentIdRoute
+  '/dashboard': typeof DashboardDashboardRoute
+  '/students/$studentId': typeof DashboardStudentsStudentIdRoute
+  '/students/': typeof DashboardStudentsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/students/$studentId': typeof StudentsStudentIdRoute
+  '/dashboard': typeof DashboardDashboardRoute
+  '/students/$studentId': typeof DashboardStudentsStudentIdRoute
+  '/students': typeof DashboardStudentsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/students/$studentId': typeof StudentsStudentIdRoute
+  '/_dashboard': typeof DashboardRouteRouteWithChildren
+  '/_dashboard/dashboard': typeof DashboardDashboardRoute
+  '/_dashboard/students/$studentId': typeof DashboardStudentsStudentIdRoute
+  '/_dashboard/students/': typeof DashboardStudentsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/students/$studentId'
+  fullPaths: '/' | '/dashboard' | '/students/$studentId' | '/students/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/students/$studentId'
-  id: '__root__' | '/' | '/dashboard' | '/students/$studentId'
+  to: '/' | '/dashboard' | '/students/$studentId' | '/students'
+  id:
+    | '__root__'
+    | '/'
+    | '/_dashboard'
+    | '/_dashboard/dashboard'
+    | '/_dashboard/students/$studentId'
+    | '/_dashboard/students/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DashboardRoute: typeof DashboardRoute
-  StudentsStudentIdRoute: typeof StudentsStudentIdRoute
+  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -68,27 +89,56 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
+    '/_dashboard': {
+      id: '/_dashboard'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof DashboardRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/students/$studentId': {
-      id: '/students/$studentId'
+    '/_dashboard/dashboard': {
+      id: '/_dashboard/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardDashboardRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/_dashboard/students/': {
+      id: '/_dashboard/students/'
+      path: '/students'
+      fullPath: '/students/'
+      preLoaderRoute: typeof DashboardStudentsIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/_dashboard/students/$studentId': {
+      id: '/_dashboard/students/$studentId'
       path: '/students/$studentId'
       fullPath: '/students/$studentId'
-      preLoaderRoute: typeof StudentsStudentIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof DashboardStudentsStudentIdRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
   }
 }
 
+interface DashboardRouteRouteChildren {
+  DashboardDashboardRoute: typeof DashboardDashboardRoute
+  DashboardStudentsStudentIdRoute: typeof DashboardStudentsStudentIdRoute
+  DashboardStudentsIndexRoute: typeof DashboardStudentsIndexRoute
+}
+
+const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardDashboardRoute: DashboardDashboardRoute,
+  DashboardStudentsStudentIdRoute: DashboardStudentsStudentIdRoute,
+  DashboardStudentsIndexRoute: DashboardStudentsIndexRoute,
+}
+
+const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
+  DashboardRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DashboardRoute: DashboardRoute,
-  StudentsStudentIdRoute: StudentsStudentIdRoute,
+  DashboardRouteRoute: DashboardRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
