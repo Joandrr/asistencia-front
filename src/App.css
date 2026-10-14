@@ -259,6 +259,24 @@
   font-weight: 700;
 }
 
+.profile-card {
+  width: min(100%, 48rem);
+  border-color: #e2e8f0;
+  background: white;
+}
+
+.profile-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 1rem;
+}
+
+.profile-details > div { display: grid; gap: 0.25rem; }
+.profile-details span, .profile-hint, .profile-description { color: #64748b; font-size: 0.85rem; }
+.profile-details strong { color: #172b4d; font-size: 0.95rem; font-weight: 600; }
+.password-form { display: grid; gap: 1.25rem; max-width: 34rem; }
+.profile-success { color: #15803d; font-size: 0.875rem; font-weight: 600; }
+
 .students-heading p:last-child { color: #64748b; font-size: 0.875rem; }
 .students-count { color: #64748b; font-size: 0.82rem; white-space: nowrap; }
 

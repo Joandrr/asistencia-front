@@ -21,7 +21,10 @@ function DashboardLayout() {
 
   return (
     <SidebarProvider>
-      <AppSidebar onLogout={() => { logout(); void navigate({ to: '/' }) }} />
+      <AppSidebar
+        onProfile={() => { void navigate({ to: '/profile' }) }}
+        onLogout={() => { logout(); void navigate({ to: '/' }) }}
+      />
       <SidebarInset>
         <header className="dashboard-header">
           <SidebarTrigger />

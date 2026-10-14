@@ -21,7 +21,20 @@ export interface LoginCredentials {
   password: string
 }
 
+export interface ChangePasswordCredentials {
+  currentPassword: string
+  newPassword: string
+}
+
 export async function login(credentials: LoginCredentials) {
   const { data } = await api.post<LoginResponse>('/auth/login', credentials)
+  return data
+}
+
+export async function changePassword(credentials: ChangePasswordCredentials) {
+  const { data } = await api.post<{ message: string }>(
+    '/auth/change-password',
+    credentials,
+  )
   return data
 }

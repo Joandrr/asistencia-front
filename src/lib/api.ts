@@ -15,7 +15,19 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
-    if (axios.isAxiosError(error) && error.response?.status === 401 && !error.config?.url?.endsWith('/auth/login')) {
+    const requestUrl = axios.isAxiosError(error) ? error.config?.url : undefined
+    const responseMessage = axios.isAxiosError(error)
+      ? error.response?.data?.message
+      : undefined
+    const invalidCurrentPassword = requestUrl?.endsWith('/auth/change-password')
+      && responseMessage === 'Current password is incorrect'
+    const isLoginRequest = requestUrl?.endsWith('/auth/login')
+    if (
+      axios.isAxiosError(error)
+      && error.response?.status === 401
+      && !isLoginRequest
+      && !invalidCurrentPassword
+    ) {
       useAuthStore.getState().logout()
     }
     return Promise.reject(error)

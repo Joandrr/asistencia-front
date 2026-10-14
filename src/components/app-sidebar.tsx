@@ -176,7 +176,7 @@ const data = {
   ],
 }
 
-export function AppSidebar({ onLogout, ...props }: React.ComponentProps<typeof Sidebar> & { onLogout?: () => void }) {
+export function AppSidebar({ onLogout, onProfile, ...props }: React.ComponentProps<typeof Sidebar> & { onLogout?: () => void; onProfile?: () => void }) {
   const user = useAuthStore((state) => state.user)
   const displayName = user?.fullName || user?.registrationNo || "Usuario"
   const displayRole = user?.role === "admin" ? "Administrador" : "Estudiante"
@@ -190,7 +190,7 @@ export function AppSidebar({ onLogout, ...props }: React.ComponentProps<typeof S
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={{ ...data.user, name: displayName, email: `${displayRole} · ${user?.registrationNo ?? ""}` }} onLogout={onLogout} />
+        <NavUser user={{ ...data.user, name: displayName, email: `${displayRole} · ${user?.registrationNo ?? ""}` }} onLogout={onLogout} onProfile={onProfile} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

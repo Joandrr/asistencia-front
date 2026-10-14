@@ -23,6 +23,7 @@ import { ChevronsUpDownIcon, SparklesIcon, BadgeCheckIcon, CreditCardIcon, BellI
 export function NavUser({
   user,
   onLogout,
+  onProfile,
 }: {
   user: {
     name: string
@@ -30,6 +31,7 @@ export function NavUser({
     avatar: string
   }
   onLogout?: () => void
+  onProfile?: () => void
 }) {
   const { isMobile } = useSidebar()
   return (
@@ -80,9 +82,9 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={onProfile}>
                 <BadgeCheckIcon />
-                Mi cuenta
+                Mi perfil
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <CreditCardIcon />
