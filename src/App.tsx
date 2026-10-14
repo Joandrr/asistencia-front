@@ -1,122 +1,89 @@
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
 import './App.css'
+import { AppSidebar } from '@/components/app-sidebar'
+import { LoginForm } from '@/components/login-form'
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/sidebar'
+import { Users, CalendarCheck2, BookOpenCheck, ChartNoAxesColumnIncreasing } from 'lucide-react'
 
-function App() {
-  const [count, setCount] = useState(0)
+function LoginScreen({ onLogin }: { onLogin: () => void }) {
+  return (
+    <main className="login-screen">
+      <div className="login-brand">
+        <div className="brand-mark"><CalendarCheck2 aria-hidden="true" /></div>
+        <span>Asistencia</span>
+      </div>
+      <div className="login-content">
+        <LoginForm onSubmit={(event) => { event.preventDefault(); onLogin() }} />
+        <p className="demo-note">Vista de demostración · el acceso no se valida con un servidor</p>
+      </div>
+    </main>
+  )
+}
+
+function Dashboard({ onLogout }: { onLogout: () => void }) {
+  const formattedDate = new Intl.DateTimeFormat('es-BO', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  }).format(new Date())
+  const stats = [
+    { label: 'Estudiantes', value: '248', detail: 'Inscritos este periodo', icon: Users },
+    { label: 'Asistencia de hoy', value: '92%', detail: 'En todos los cursos', icon: CalendarCheck2 },
+    { label: 'Cursos activos', value: '12', detail: 'En el periodo actual', icon: BookOpenCheck },
+    { label: 'A tiempo', value: '+4.8%', detail: 'Respecto al mes pasado', icon: ChartNoAxesColumnIncreasing },
+  ]
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    <SidebarProvider>
+      <AppSidebar onLogout={onLogout} />
+      <SidebarInset>
+        <header className="dashboard-header">
+          <SidebarTrigger />
+          <div className="header-copy">
+            <p className="eyebrow">PANEL PRINCIPAL</p>
+            <h1>Resumen de asistencia</h1>
+          </div>
+        </header>
+        <main className="dashboard-content">
+          <section className="welcome-banner">
+            <div>
+              <p className="eyebrow">{formattedDate}</p>
+              <h2>¡Hola! Aquí está el resumen de hoy.</h2>
+              <p>Consulta rápidamente la actividad académica de tu institución.</p>
+            </div>
+            <CalendarCheck2 aria-hidden="true" />
+          </section>
+          <section className="stats-grid" aria-label="Indicadores principales">
+            {stats.map(({ label, value, detail, icon: Icon }) => (
+              <article className="stat-card" key={label}>
+                <div className="stat-heading"><span>{label}</span><Icon aria-hidden="true" /></div>
+                <strong>{value}</strong>
+                <p>{detail}</p>
+              </article>
+            ))}
+          </section>
+          <section className="activity-card">
+            <div>
+              <p className="eyebrow">ACTIVIDAD</p>
+              <h2>Registro de asistencia</h2>
+              <p>El menú lateral ya está listo para conectar las secciones de la aplicación.</p>
+            </div>
+            <span className="status-pill"><span /> Sistema listo</span>
+          </section>
+          <p className="demo-note">Panel de demostración · todavía no está conectado a datos reales</p>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   )
+}
+
+function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  return isLoggedIn
+    ? <Dashboard onLogout={() => setIsLoggedIn(false)} />
+    : <LoginScreen onLogin={() => setIsLoggedIn(true)} />
 }
 
 export default App
