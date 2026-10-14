@@ -39,7 +39,7 @@ function DashboardPage() {
 }
 
 /* =========================================================================
-   STUDENT DASHBOARD (RF-03: REGISTRAR ASISTENCIA & HISTORIAL POR MATERIA)
+   STUDENT DASHBOARD (RF-03: REGISTRAR ASISTENCIA & HISTORIAL POR MÓDULO)
    ========================================================================= */
 function StudentDashboard() {
   const user = useAuthStore((state) => state.user)
@@ -170,7 +170,7 @@ function StudentDashboard() {
           onClick={() => { setActiveTab('history'); setActionNotice(null) }}
         >
           <History size={17} />
-          Historial por Materia
+          Historial por Módulo
         </button>
       </nav>
 
@@ -198,7 +198,7 @@ function StudentDashboard() {
               <CalendarDays size={42} style={{ color: '#94a3b8', margin: '0 auto 1rem' }} />
               <h4 style={{ margin: '0 0 0.5rem', color: '#172b4d' }}>No tienes clases programadas para hoy</h4>
               <p style={{ margin: 0, color: '#64748b', fontSize: '0.88rem' }}>
-                Revisa la pestaña de <strong>Historial por Materia</strong> para ver tus asistencias pasadas o próximas fechas.
+                Revisa la pestaña de <strong>Historial por Módulo</strong> para ver tus asistencias pasadas o próximas fechas.
               </p>
             </article>
           ) : (
@@ -216,7 +216,7 @@ function StudentDashboard() {
         </section>
       )}
 
-      {/* TAB 2: HISTORIAL POR MATERIA */}
+      {/* TAB 2: HISTORIAL POR MÓDULO */}
       {activeTab === 'history' && (
         <section aria-labelledby="history-heading">
           <div className="history-card-header">
@@ -225,19 +225,19 @@ function StudentDashboard() {
                 Historial y Estadísticas de Asistencia
               </h3>
               <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: '#64748b' }}>
-                Revisa tus registros, porcentajes de cumplimiento y estados por materia.
+                Revisa tus registros, porcentajes de cumplimiento y estados por módulo.
               </p>
             </div>
 
             {/* Filter by Module */}
             <div className="users-filter">
-              <label htmlFor="filter-module" style={{ fontWeight: 600 }}>Filtrar materia:</label>
+              <label htmlFor="filter-module" style={{ fontWeight: 600 }}>Filtrar módulo:</label>
               <select
                 id="filter-module"
                 value={selectedModuleId}
                 onChange={(e) => setSelectedModuleId(e.target.value)}
               >
-                <option value="all">Todas las materias inscritas ({historyModules.length})</option>
+                <option value="all">Todos los módulos inscritos ({historyModules.length})</option>
                 {historyModules.map((m) => (
                   <option key={m.moduleId} value={m.moduleId}>
                     {m.moduleName}
@@ -257,7 +257,7 @@ function StudentDashboard() {
               <BookOpenCheck size={42} style={{ color: '#94a3b8', margin: '0 auto 1rem' }} />
               <h4 style={{ margin: '0 0 0.5rem', color: '#172b4d' }}>Sin historial registrado</h4>
               <p style={{ margin: 0, color: '#64748b', fontSize: '0.88rem' }}>
-                No se encontraron asistencias registradas para esta materia.
+                No se encontraron asistencias registradas para este módulo.
               </p>
             </article>
           ) : (
@@ -270,7 +270,18 @@ function StudentDashboard() {
                         <GraduationCap size={20} />
                       </div>
                       <div>
-                        <h4 style={{ margin: 0, fontSize: '1.15rem', color: '#172b4d' }}>{moduleItem.moduleName}</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <h4 style={{ margin: 0, fontSize: '1.15rem', color: '#172b4d' }}>{moduleItem.moduleName}</h4>
+                          {moduleItem.isActive ? (
+                            <span className="badge-pill badge-live" style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}>
+                              <span className="badge-live-dot" /> Módulo Activo
+                            </span>
+                          ) : (
+                            <span className="badge-pill" style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}>
+                              Módulo Concluido
+                            </span>
+                          )}
+                        </div>
                         <p style={{ margin: '0.2rem 0 0', color: '#64748b', fontSize: '0.8rem' }}>
                           Total de clases programadas: {moduleItem.stats.totalSchedules}
                         </p>

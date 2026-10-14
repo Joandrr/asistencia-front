@@ -211,7 +211,7 @@ export function AppSidebar({ onLogout, onProfile, ...props }: React.ComponentPro
           url: "/dashboard",
         },
         {
-          title: "Historial por Materia",
+          title: "Historial por Módulo",
           url: "/dashboard",
         },
       ],
