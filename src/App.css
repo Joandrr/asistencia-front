@@ -636,3 +636,71 @@
   color: #991b1b;
 }
 
+
+/* === ADMINISTRACIÓN DE ESTUDIANTES Y ASISTENCIAS (3.3) === */
+.attendance-admin-module { color: #172b4d; font-weight: 600; }
+.attendance-admin-table .attendance-admin-num { text-align: right; font-variant-numeric: tabular-nums; }
+.attendance-admin-time { color: #475569; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.attendance-admin-table .user-actions button { gap: 0.35rem; }
+.tabs-nav .tab-trigger svg { width: 1rem; height: 1rem; }
+.attendance-admin-date-filter select { min-width: 15rem; }
+.attendance-admin-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; border-radius: 0.65rem; background: #f8fafc; }
+.attendance-admin-strip-rate { margin-left: auto; color: #64748b; font-size: 0.8rem; }
+.attendance-admin-strip-rate strong { color: #172b4d; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.attendance-admin-strip .attendance-admin-hint { flex-basis: 100%; }
+.attendance-admin-hint { color: #64748b; font-size: 0.78rem; }
+.attendance-admin-avatar { display: grid; width: 2.25rem; height: 2.25rem; flex: 0 0 auto; place-items: center; border-radius: 999px; color: #1d4ed8; background: #dbeafe; font-size: 0.78rem; font-weight: 700; }
+.attendance-admin-avatar-lg { width: 3rem; height: 3rem; font-size: 0.95rem; }
+.attendance-admin-picker { display: grid; gap: 0.75rem; }
+.attendance-admin-picker .users-search { width: min(100%, 28rem); }
+.attendance-admin-picker-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: 0.6rem; margin: 0; padding: 0; list-style: none; }
+.attendance-admin-picker-item { display: flex; width: 100%; align-items: center; gap: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 0.75rem 0.9rem; background: white; color: inherit; text-align: left; cursor: pointer; transition: border-color 0.15s, background-color 0.15s; }
+.attendance-admin-picker-item:hover, .attendance-admin-picker-item:focus-visible { border-color: #2563eb; background: #eff6ff; outline: none; }
+.attendance-admin-picker-text { display: grid; min-width: 0; flex: 1; gap: 0.1rem; }
+.attendance-admin-picker-text strong { overflow: hidden; color: #172b4d; font-size: 0.86rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.attendance-admin-picker-text span { overflow: hidden; color: #64748b; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
+.attendance-admin-picker-rate { color: #172b4d; font-size: 0.82rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.attendance-admin-student-bar { display: flex; justify-content: flex-start; }
+.attendance-admin-student-bar button { gap: 0.35rem; }
+.attendance-admin-student { display: flex; align-items: center; gap: 0.9rem; }
+.attendance-admin-student h3 { margin: 0; color: #172b4d; font-size: 1.05rem; font-weight: 700; }
+.attendance-admin-student p { margin-top: 0.15rem; color: #64748b; font-size: 0.82rem; overflow-wrap: anywhere; }
+.attendance-admin-current { display: flex; align-items: center; gap: 0.5rem; color: #64748b; font-size: 0.85rem; }
+.attendance-admin-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+.attendance-admin-option { position: relative; display: flex; align-items: center; justify-content: center; gap: 0.5rem; border: 1.5px solid #e2e8f0; border-radius: 0.75rem; padding: 0.85rem; color: #475569; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s, background-color 0.15s, color 0.15s; }
+.attendance-admin-option input { position: absolute; opacity: 0; pointer-events: none; }
+.attendance-admin-option svg { width: 1.1rem; height: 1.1rem; }
+.attendance-admin-option:hover { border-color: #cbd5e1; background: #f8fafc; }
+.attendance-admin-option:has(input:focus-visible) { outline: 2px solid #2563eb; outline-offset: 2px; }
+.attendance-admin-option-present.is-selected { border-color: #22c55e; color: #15803d; background: #f0fdf4; }
+.attendance-admin-option-absent.is-selected { border-color: #ef4444; color: #b91c1c; background: #fef2f2; }
+.attendance-admin-notes-field { display: grid; gap: 0.35rem; }
+.attendance-admin-notes-field label { color: #172b4d; font-size: 0.875rem; font-weight: 500; }
+.attendance-admin-notes-field label span { color: #64748b; font-weight: 400; }
+.attendance-admin-notes-field .profile-hint { justify-self: end; font-size: 0.72rem; }
+.attendance-admin-notes { width: 100%; resize: vertical; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.55rem 0.7rem; color: #172b4d; background: white; font: inherit; font-size: 0.875rem; }
+.attendance-admin-notes:focus { border-color: #2563eb; outline: 2px solid rgb(37 99 235 / 20%); }
+
+@media (max-width: 560px) {
+  .attendance-admin-date-filter { width: 100%; }
+  .attendance-admin-date-filter select { min-width: 0; }
+  .attendance-admin-strip-rate { margin-left: 0; flex-basis: 100%; }
+  .attendance-admin-picker .users-search { width: 100%; }
+}
+
+/* Navigation link styled like an outline small button (keeps link semantics). */
+.link-button { display: inline-flex; height: 1.75rem; align-items: center; gap: 0.35rem; border: 1px solid var(--border); border-radius: 0.6rem; padding: 0 0.625rem; color: #172b4d; background: white; font-size: 0.8rem; font-weight: 500; white-space: nowrap; text-decoration: none; transition: background-color 0.15s; }
+.link-button:hover { background: var(--muted); }
+.link-button:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.link-button svg { width: 0.875rem; height: 0.875rem; }
+
+/* Grid items default to min-width:auto; let wide tables scroll inside their wrapper. */
+.attendance-admin-content > * { min-width: 0; }
+/* Contain absolutely positioned .sr-only cells so they don't widen the page. */
+.attendance-admin-content .users-table-wrap { position: relative; }
+.attendance-admin-content .tab-trigger { white-space: nowrap; }
+.attendance-admin-stale { opacity: 0.55; transition: opacity 0.15s; }
+
+@media (max-width: 560px) {
+  .attendance-admin-content .tab-trigger { padding: 0.55rem 0.75rem; font-size: 0.85rem; }
+}
