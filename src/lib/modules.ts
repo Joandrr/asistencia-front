@@ -7,6 +7,7 @@ export interface ActiveModuleSummary {
   id: string
   name: string
   activatedAt: string
+  graceMinutes: number
   studentsCount: number
   schedulesCount: number
   firstDate: string | null
@@ -50,6 +51,7 @@ export interface ImportPreview {
 
 export interface ActivationResult {
   module: { id: string; name: string }
+  graceMinutes: number
   previousModule: { id: string; name: string } | null
   students: { total: number; new: number; existing: number; reactivated: number }
   schedules: { total: number; firstDate: string | null; lastDate: string | null }
@@ -83,11 +85,30 @@ export async function previewModuleImport(files: ImportFiles) {
   return data
 }
 
-export async function activateModule({ name, files }: { name: string; files: ImportFiles }) {
+export async function activateModule({ name, graceMinutes, files }: { name: string; graceMinutes: number; files: ImportFiles }) {
   const formData = importFormData(files)
   formData.append('name', name)
+  formData.append('graceMinutes', String(graceMinutes))
   formData.append('confirm', 'true')
   const { data } = await api.post<ActivationResult>('/modules/activate', formData, multipartConfig)
+  return data
+}
+
+export const DEFAULT_GRACE_MINUTES = 10
+export const MAX_GRACE_MINUTES = 240
+
+/** Parses a grace-period input; null when it is not a whole number between 0 and 240. */
+export function parseGraceMinutes(value: string) {
+  if (!/^\d{1,3}$/.test(value.trim())) return null
+  const minutes = Number(value)
+  return minutes <= MAX_GRACE_MINUTES ? minutes : null
+}
+
+export async function updateGracePeriod(graceMinutes: number) {
+  const { data } = await api.patch<{ graceMinutes: number; updatedSchedules: number; unchanged: boolean }>(
+    '/modules/active/grace-period',
+    { graceMinutes },
+  )
   return data
 }
 

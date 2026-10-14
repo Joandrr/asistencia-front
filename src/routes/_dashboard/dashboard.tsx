@@ -1,7 +1,8 @@
 /* eslint-disable react-refresh/only-export-components -- TanStack file routes export Route and their component from one module. */
 import { useState, useEffect } from 'react'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import axios from 'axios'
 import {
   AlertCircle,
   BookOpenCheck,
@@ -13,7 +14,6 @@ import {
   GraduationCap,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import {
@@ -24,19 +24,12 @@ import {
 } from '@/lib/attendance'
 
 export const Route = createFileRoute('/_dashboard/dashboard')({
-  component: DashboardPage,
+  // Administrators land on the real attendance overview instead of a demo panel.
+  beforeLoad: () => {
+    if (useAuthStore.getState().user?.role === 'admin') throw redirect({ to: '/attendance' })
+  },
+  component: StudentDashboard,
 })
-
-function DashboardPage() {
-  const user = useAuthStore((state) => state.user)
-  const isStudent = user?.role === 'student'
-
-  if (isStudent) {
-    return <StudentDashboard />
-  }
-
-  return <AdminDashboard />
-}
 
 /* =========================================================================
    STUDENT DASHBOARD (RF-03: REGISTRAR ASISTENCIA & HISTORIAL POR MÓDULO)
@@ -95,8 +88,11 @@ function StudentDashboard() {
       void queryClient.invalidateQueries({ queryKey: ['today-classes'] })
       void queryClient.invalidateQueries({ queryKey: ['attendance-history'] })
     },
-    onError: (err: any) => {
-      const msg = err.response?.data?.message || 'No se pudo registrar la asistencia.'
+    onError: (err: unknown) => {
+      const message = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: unknown } | undefined)?.message
+        : undefined
+      const msg = typeof message === 'string' && message ? message : 'No se pudo registrar la asistencia.'
       setActionNotice({ type: 'error', text: msg })
     },
   })
@@ -481,69 +477,5 @@ function TodayClassCard({
         </p>
       </div>
     </article>
-  )
-}
-
-/* =========================================================================
-   ADMIN DASHBOARD VIEW (PRESERVED FOR ADMINISTRATORS)
-   ========================================================================= */
-function AdminDashboard() {
-  const formattedDate = new Intl.DateTimeFormat('es-BO', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(new Date())
-
-  const stats = [
-    { label: 'Asistencia de hoy', value: '92%', detail: 'En todos los cursos', icon: CalendarCheck2 },
-    { label: 'Cursos activos', value: '3', detail: 'Periodo académico actual', icon: BookOpenCheck },
-    { label: 'Módulos registrados', value: '3', detail: 'Sistemas Operativos, BD, Redes', icon: Sparkles },
-  ]
-
-  return (
-    <main className="dashboard-content">
-      <section className="welcome-banner">
-        <div>
-          <p className="eyebrow">{formattedDate}</p>
-          <h2>Panel de Administración Académica</h2>
-          <p>Supervisa el registro de asistencias y la gestión institucional.</p>
-        </div>
-        <CalendarCheck2 aria-hidden="true" />
-      </section>
-
-      <section className="stats-grid" aria-label="Indicadores principales">
-        {stats.map(({ label, value, detail, icon: Icon }) => (
-          <article className="stat-card" key={label}>
-            <div className="stat-heading"><span>{label}</span><Icon aria-hidden="true" /></div>
-            <strong>{value}</strong>
-            <p>{detail}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="activity-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '1.25rem' }}>
-        <div>
-          <p className="eyebrow">AUDITORÍA Y CONTROL (RF-09 / RF-10)</p>
-          <h2>Historial de Actividades</h2>
-          <p>Supervisa las marcas de estudiantes y las modificaciones administrativas del módulo activo.</p>
-        </div>
-        <Link
-          to="/activities"
-          className="btn-mark btn-mark-ready"
-          style={{ width: 'auto', margin: 0, padding: '0.65rem 1.25rem', gap: '0.5rem', textDecoration: 'none' }}
-        >
-          <History size={18} /> Ver Historial de Actividades
-        </Link>
-      </section>
-
-      <section className="activity-card" style={{ marginTop: '1.25rem' }}>
-        <div>
-          <p className="eyebrow">ADMINISTRACIÓN</p>
-          <h2>Módulo de Asistencia Estudiantil Operativo</h2>
-          <p>Los estudiantes pueden marcar su asistencia en tiempo real según RF-03.</p>
-        </div>
-        <span className="status-pill"><span /> Sistema en línea</span>
-      </section>
-    </main>
   )
 }

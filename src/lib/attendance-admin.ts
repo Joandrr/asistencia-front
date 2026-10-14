@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { api } from '@/lib/api'
 
-export type EffectiveStatus = 'present' | 'absent' | 'pending'
-export type CorrectableStatus = 'present' | 'absent'
+export type EffectiveStatus = 'present' | 'late' | 'absent' | 'pending'
+export type CorrectableStatus = 'present' | 'late' | 'absent'
 
 export interface ModuleRef {
   id: string
@@ -11,9 +11,11 @@ export interface ModuleRef {
 
 export interface StatusTotals {
   present: number
+  /** Marked after the module's grace period; counts as attended. */
+  late: number
   absent: number
   pending: number
-  /** Present / (present + absent); null while nothing was evaluated. */
+  /** (present + late) / (present + late + absent); null while nothing was evaluated. */
   rate: number | null
 }
 
@@ -98,12 +100,14 @@ export const ATTENDANCE_ADMIN_KEY = 'attendance-admin'
 
 export const STATUS_LABEL: Record<EffectiveStatus, string> = {
   present: 'Presente',
+  late: 'Atraso',
   absent: 'Falta',
   pending: 'Pendiente',
 }
 
 export const STATUS_BADGE: Record<EffectiveStatus, string> = {
   present: 'badge-pill badge-success',
+  late: 'badge-pill badge-warning',
   absent: 'badge-pill badge-danger',
   pending: 'badge-pill badge-neutral',
 }
@@ -125,6 +129,20 @@ export async function getDateAttendance(params: { scheduleId: string; page: numb
 
 export async function getStudentAttendance(studentId: string) {
   const { data } = await api.get<StudentAttendance>(`/admin/attendance/by-student/${encodeURIComponent(studentId)}`)
+  return data
+}
+
+export interface AddStudentPayload {
+  registrationNo: string
+  fullName: string
+  email: string
+}
+
+export async function addModuleStudent(payload: AddStudentPayload) {
+  const { data } = await api.post<{
+    status: 'new' | 'existing' | 'reactivated'
+    student: { id: string; registrationNo: string; fullName: string; email: string }
+  }>('/admin/students', payload)
   return data
 }
 
@@ -189,9 +207,19 @@ export function getAttendanceAdminError(error: unknown) {
     if (text.toLowerCase().includes('student')) return 'El estudiante no pertenece al módulo activo.'
     return text || 'No se encontró la información solicitada.'
   }
-  if (status === 409) return 'La asistencia cambió mientras se guardaba. Vuelve a intentarlo.'
-  // Correction errors are already written in Spanish by the server.
-  if (status === 400) return text || 'La solicitud no es válida.'
+  if (status === 409) {
+    if (text.includes('administrator')) return 'Ese número de registro pertenece a un administrador.'
+    if (text.includes('Email')) return 'Ese correo ya está registrado para otro usuario.'
+    if (text.includes('already enrolled')) return 'El estudiante ya está inscrito en el módulo activo.'
+    return 'Los datos cambiaron mientras se guardaba. Vuelve a intentarlo.'
+  }
+  if (status === 400) {
+    if (text.includes('registrationNo')) return 'El número de registro debe tener entre 6 y 12 dígitos.'
+    if (text.includes('fullName')) return 'El nombre completo es obligatorio (máximo 200 caracteres y con letras).'
+    if (text.includes('email')) return 'El correo electrónico no tiene un formato válido.'
+    // Correction errors are already written in Spanish by the server.
+    return text || 'La solicitud no es válida.'
+  }
   if (!status) return 'No se pudo conectar con el servidor.'
   return 'No se pudo completar la operación. Inténtalo nuevamente.'
 }

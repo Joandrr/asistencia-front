@@ -11,18 +11,23 @@ import {
   FileSpreadsheet,
   FolderClock,
   FolderUp,
+  Pencil,
   TriangleAlert,
   Users,
   X,
 } from 'lucide-react'
 import {
   activateModule,
+  DEFAULT_GRACE_MINUTES,
   downloadTemplate,
   formatDateRange,
   formatIsoDate,
   getActiveModule,
+  MAX_GRACE_MINUTES,
   MAX_IMPORT_FILE_BYTES,
+  parseGraceMinutes,
   previewModuleImport,
+  updateGracePeriod,
   type ImportFileKind,
   type ImportFiles,
   type ImportIssue,
@@ -62,6 +67,7 @@ const STATUS_LABEL: Record<ImportStudentStatus, string> = {
 function ModulesPage() {
   const queryClient = useQueryClient()
   const [name, setName] = useState('')
+  const [graceInput, setGraceInput] = useState(String(DEFAULT_GRACE_MINUTES))
   const [files, setFiles] = useState<Partial<ImportFiles>>({})
   const [formError, setFormError] = useState('')
   const [notice, setNotice] = useState('')
@@ -80,10 +86,11 @@ function ModulesPage() {
       ])
       setConfirmOpen(false)
       setName('')
+      setGraceInput(String(DEFAULT_GRACE_MINUTES))
       setFiles({})
       setFormVersion((value) => value + 1)
       previewMutation.reset()
-      setNotice(`Módulo «${result.module.name}» activado con ${result.students.total} estudiantes y ${result.schedules.total} fechas de clase.`)
+      setNotice(`Módulo «${result.module.name}» activado con ${result.students.total} estudiantes, ${result.schedules.total} fechas de clase y ${result.graceMinutes} minutos de tolerancia.`)
     },
     onError: (error) => {
       // The server re-validates the files; show the fresh errors in the preview.
@@ -97,6 +104,7 @@ function ModulesPage() {
   const preview = previewMutation.data
   const trimmedName = name.replace(/\s+/g, ' ').trim()
   const nameValid = trimmedName.length > 0 && trimmedName.length <= MODULE_NAME_MAX
+  const graceMinutes = parseGraceMinutes(graceInput)
   const busy = previewMutation.isPending || activateMutation.isPending
 
   function changeFile(kind: ImportFileKind, file: File | null) {
@@ -124,14 +132,15 @@ function ModulesPage() {
   function openConfirm() {
     setFormError('')
     if (!nameValid) return setFormError(`Escribe el nombre del módulo (máximo ${MODULE_NAME_MAX} caracteres).`)
+    if (graceMinutes === null) return setFormError(`El tiempo de gracia debe ser un número entero entre 0 y ${MAX_GRACE_MINUTES} minutos.`)
     activateMutation.reset()
     setAcknowledged(false)
     setConfirmOpen(true)
   }
 
   function confirmActivation() {
-    if (!isComplete(files) || !acknowledged) return
-    activateMutation.mutate({ name: trimmedName, files })
+    if (!isComplete(files) || !acknowledged || graceMinutes === null) return
+    activateMutation.mutate({ name: trimmedName, graceMinutes, files })
   }
 
   return (
@@ -139,31 +148,50 @@ function ModulesPage() {
       <section className="users-heading">
         <div>
           <p className="eyebrow">ADMINISTRACIÓN</p>
-          <h2>Nuevo módulo</h2>
-          <p>Carga los estudiantes y las fechas de clase para iniciar un nuevo módulo académico.</p>
+          <h2>Módulos</h2>
+          <p>Configura el módulo activo o carga los estudiantes y las fechas para iniciar uno nuevo.</p>
         </div>
       </section>
 
       {notice && <p className="users-notice" role="status">{notice}</p>}
 
-      <ActiveModuleCard query={activeQuery} />
+      <ActiveModuleCard query={activeQuery} onGraceSaved={setNotice} />
 
       <Card className="users-card">
         <CardContent className="users-card-content">
           <form key={formVersion} className="modules-form" onSubmit={validate} noValidate>
             <StepHeading step={1} title="Datos y archivos" description="Usa las plantillas para evitar errores de formato. Solo se admiten archivos .xlsx de hasta 2 MB." />
-            <Field className="modules-name-field">
-              <FieldLabel htmlFor="module-name">Nombre del módulo</FieldLabel>
-              <Input
-                id="module-name"
-                value={name}
-                maxLength={MODULE_NAME_MAX}
-                placeholder="Ej.: Módulo 3 - Desarrollo Backend"
-                onChange={(event) => { setName(event.currentTarget.value); setNotice('') }}
-                aria-invalid={Boolean(name) && !nameValid}
-                required
-              />
-            </Field>
+            <div className="modules-fields">
+              <Field>
+                <FieldLabel htmlFor="module-name">Nombre del módulo</FieldLabel>
+                <Input
+                  id="module-name"
+                  value={name}
+                  maxLength={MODULE_NAME_MAX}
+                  placeholder="Ej.: Módulo 3 - Desarrollo Backend"
+                  onChange={(event) => { setName(event.currentTarget.value); setNotice('') }}
+                  aria-invalid={Boolean(name) && !nameValid}
+                  required
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="module-grace">Tiempo de gracia (minutos)</FieldLabel>
+                <Input
+                  id="module-grace"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={MAX_GRACE_MINUTES}
+                  step={1}
+                  value={graceInput}
+                  onChange={(event) => { setGraceInput(event.currentTarget.value); setNotice('') }}
+                  aria-invalid={graceMinutes === null}
+                  aria-describedby="module-grace-hint"
+                  required
+                />
+                <span id="module-grace-hint" className="profile-hint">Dentro de este margen es Presente; después, Atraso.</span>
+              </Field>
+            </div>
             <div className="modules-upload-grid">
               {(['students', 'schedules'] as const).map((kind) => (
                 <FileDropZone
@@ -190,8 +218,9 @@ function ModulesPage() {
       {preview && (
         <PreviewSection
           preview={preview}
-          canActivate={preview.valid && nameValid && !busy}
+          canActivate={preview.valid && nameValid && graceMinutes !== null && !busy}
           nameMissing={!nameValid}
+          graceMinutes={graceMinutes}
           onActivate={openConfirm}
         />
       )}
@@ -203,7 +232,7 @@ function ModulesPage() {
             <Dialog.Popup className="users-dialog users-confirm-dialog">
               <Dialog.Title className="users-dialog-title">Activar nuevo módulo</Dialog.Title>
               <Dialog.Description className="users-dialog-description">
-                Se activará <strong>{trimmedName}</strong> con {preview.students.total} estudiantes y {preview.schedules.total} fechas de clase. El nuevo módulo empezará sin registros de asistencia.
+                Se activará <strong>{trimmedName}</strong> con {preview.students.total} estudiantes, {preview.schedules.total} fechas de clase y <strong>{graceMinutes} minutos</strong> de tolerancia. El nuevo módulo empezará sin registros de asistencia.
               </Dialog.Description>
               {preview.activeModule && (
                 <p className="modules-confirm-warning">
@@ -230,7 +259,14 @@ function ModulesPage() {
   )
 }
 
-function ActiveModuleCard({ query }: { query: UseQueryResult<ActiveModuleSummary | null> }) {
+function ActiveModuleCard({
+  query,
+  onGraceSaved,
+}: {
+  query: UseQueryResult<ActiveModuleSummary | null>
+  onGraceSaved: (message: string) => void
+}) {
+  const [editingGrace, setEditingGrace] = useState(false)
   if (query.isPending) {
     return <section className="modules-active modules-active-muted"><FolderClock aria-hidden="true" /><p>Cargando módulo activo…</p></section>
   }
@@ -265,9 +301,127 @@ function ActiveModuleCard({ query }: { query: UseQueryResult<ActiveModuleSummary
       <dl className="modules-active-stats">
         <div><dt>Estudiantes</dt><dd>{module.studentsCount}</dd></div>
         <div><dt>Fechas de clase</dt><dd>{module.schedulesCount}</dd></div>
+        <div>
+          <dt>Tolerancia</dt>
+          <dd className="modules-active-grace">
+            {module.graceMinutes} min
+            <Button variant="outline" size="icon-xs" aria-label="Editar tiempo de gracia" onClick={() => setEditingGrace(true)}>
+              <Pencil aria-hidden="true" />
+            </Button>
+          </dd>
+        </div>
         <div className="modules-active-period"><dt>Periodo</dt><dd>{formatDateRange(module.firstDate, module.lastDate)}</dd></div>
       </dl>
+      <GracePeriodDialog
+        open={editingGrace}
+        current={module.graceMinutes}
+        onClose={() => setEditingGrace(false)}
+        onSaved={(message) => { setEditingGrace(false); onGraceSaved(message) }}
+      />
     </section>
+  )
+}
+
+function GracePeriodDialog({
+  open,
+  current,
+  onClose,
+  onSaved,
+}: {
+  open: boolean
+  current: number
+  onClose: () => void
+  onSaved: (message: string) => void
+}) {
+  const queryClient = useQueryClient()
+  const mutation = useMutation({
+    mutationFn: updateGracePeriod,
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({ queryKey: ACTIVE_MODULE_KEY })
+      onSaved(result.unchanged
+        ? 'El tiempo de gracia no cambió.'
+        : `Tiempo de gracia actualizado a ${result.graceMinutes} minutos para ${result.updatedSchedules} ${result.updatedSchedules === 1 ? 'clase' : 'clases'} de hoy en adelante.`)
+    },
+  })
+
+  function close() {
+    if (mutation.isPending) return
+    mutation.reset()
+    onClose()
+  }
+
+  return (
+    <Dialog.Root open={open} onOpenChange={(next) => { if (!next) close() }}>
+      {open && (
+        <Dialog.Portal>
+          <Dialog.Backdrop className="users-dialog-backdrop" />
+          <Dialog.Popup className="users-dialog users-confirm-dialog">
+            <Dialog.Title className="users-dialog-title">Tiempo de gracia</Dialog.Title>
+            <Dialog.Description className="users-dialog-description">
+              Minutos desde la hora de inicio en los que la marca cuenta como <strong>Presente</strong>; después cuenta como <strong>Atraso</strong>. Se aplica a las clases de hoy en adelante; las fechas pasadas conservan su tolerancia.
+            </Dialog.Description>
+            <GracePeriodForm
+              key={current}
+              current={current}
+              busy={mutation.isPending}
+              serverError={mutation.error ? getModulesError(mutation.error) : ''}
+              onCancel={close}
+              onSubmit={(minutes) => mutation.mutate(minutes)}
+            />
+          </Dialog.Popup>
+        </Dialog.Portal>
+      )}
+    </Dialog.Root>
+  )
+}
+
+function GracePeriodForm({
+  current,
+  busy,
+  serverError,
+  onCancel,
+  onSubmit,
+}: {
+  current: number
+  busy: boolean
+  serverError: string
+  onCancel: () => void
+  onSubmit: (minutes: number) => void
+}) {
+  const [value, setValue] = useState(String(current))
+  const minutes = parseGraceMinutes(value)
+  const unchanged = minutes === current
+
+  return (
+    <form
+      className="user-form"
+      noValidate
+      onSubmit={(event) => { event.preventDefault(); if (minutes !== null && !unchanged) onSubmit(minutes) }}
+    >
+      <Field>
+        <FieldLabel htmlFor="grace-minutes">Minutos de tolerancia</FieldLabel>
+        <Input
+          id="grace-minutes"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={MAX_GRACE_MINUTES}
+          step={1}
+          value={value}
+          disabled={busy}
+          autoFocus
+          aria-invalid={minutes === null}
+          onChange={(event) => setValue(event.currentTarget.value)}
+        />
+        <span className="profile-hint">Número entero entre 0 y {MAX_GRACE_MINUTES}. Con 0, cualquier marca después del inicio es Atraso.</span>
+      </Field>
+      {minutes === null && <p className="users-error" role="alert">Ingresa un número entero entre 0 y {MAX_GRACE_MINUTES}.</p>}
+      {serverError && <p className="users-error" role="alert">{serverError}</p>}
+      <div className="users-dialog-actions">
+        <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>Cancelar</Button>
+        <Button type="submit" disabled={busy || minutes === null || unchanged}>{busy ? 'Guardando…' : 'Guardar'}</Button>
+      </div>
+    </form>
   )
 }
 
@@ -376,11 +530,13 @@ function PreviewSection({
   preview,
   canActivate,
   nameMissing,
+  graceMinutes,
   onActivate,
 }: {
   preview: ImportPreview
   canActivate: boolean
   nameMissing: boolean
+  graceMinutes: number | null
   onActivate: () => void
 }) {
   const { students, schedules } = preview
@@ -404,7 +560,7 @@ function PreviewSection({
           <article className="stat-card">
             <div className="stat-heading"><span>Fechas de clase</span><CalendarDays aria-hidden="true" /></div>
             <strong>{schedules.total}</strong>
-            <p>Asistencia habilitada todo el día de cada fecha</p>
+            <p>{graceMinutes === null ? 'Revisa el tiempo de gracia' : `Tolerancia de ${graceMinutes} min desde el inicio`}</p>
           </article>
           <article className="stat-card">
             <div className="stat-heading"><span>Periodo</span><FolderClock aria-hidden="true" /></div>
@@ -568,7 +724,9 @@ function getModulesError(error: unknown) {
   if (status === 413) return 'Cada archivo puede pesar como máximo 2 MB.'
   if (status === 422) return 'Los archivos contienen errores. Revisa la vista previa.'
   if (status === 409) return 'Los datos cambiaron mientras se activaba el módulo. Vuelve a validar los archivos.'
+  if (status === 404 && text.includes('no active module')) return 'No hay un módulo activo.'
   if (status === 400) {
+    if (text.includes('graceminutes')) return `El tiempo de gracia debe ser un número entero entre 0 y ${MAX_GRACE_MINUTES} minutos.`
     if (text.includes('name')) return `Revisa el nombre del módulo (máximo ${MODULE_NAME_MAX} caracteres).`
     if (text.includes('xlsx') || text.includes('file')) return 'Ambos archivos deben ser Excel (.xlsx) válidos.'
     return 'La solicitud no es válida. Revisa los datos e inténtalo de nuevo.'

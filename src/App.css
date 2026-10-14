@@ -705,6 +705,23 @@
   .attendance-admin-content .tab-trigger { padding: 0.55rem 0.75rem; font-size: 0.85rem; }
 }
 
+/* Module fields: name + grace period side by side. */
+.modules-fields { display: grid; grid-template-columns: minmax(0, 34rem) minmax(0, 16rem); gap: 1rem; align-items: start; }
+.modules-active-grace { display: inline-flex; align-items: center; gap: 0.4rem; }
+.modules-active-stats:has(.modules-active-grace) { grid-template-columns: repeat(4, auto); }
+
+@media (max-width: 800px) {
+  .modules-fields { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .modules-active-stats:has(.modules-active-grace) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Correction options: Presente / Atraso / Falta. */
+.attendance-admin-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.attendance-admin-option-late.is-selected { border-color: #f59e0b; color: #b45309; background: #fffbeb; }
+
 /* === HISTORIAL DE ACTIVIDADES (3.4) === */
 .activities-stats-grid {
   display: grid;
