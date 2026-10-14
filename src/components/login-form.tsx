@@ -10,13 +10,18 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import type { LoginCredentials } from "@/lib/auth"
 
 export function LoginForm({
   className,
   onSubmit,
+  isSubmitting = false,
+  errorMessage,
   ...props
-}: React.ComponentProps<"div"> & {
-  onSubmit?: React.FormEventHandler<HTMLFormElement>
+}: Omit<React.ComponentProps<"div">, "onSubmit"> & {
+  onSubmit?: (credentials: LoginCredentials) => void
+  isSubmitting?: boolean
+  errorMessage?: string
 }) {
   const [registration, setRegistration] = useState("")
   const [password, setPassword] = useState("")
@@ -30,24 +35,25 @@ export function LoginForm({
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    if (!/^[0-9]{1,12}$/.test(registration)) {
+    event.preventDefault()
+    if (!/^[0-9]{7,12}$/.test(registration)) {
       event.preventDefault()
       showRegistrationError(
         registration
-          ? "El registro debe contener solo números (máximo 12)."
+          ? "El registro debe contener solo números (entre 7 y 12 dígitos)."
           : "El registro es obligatorio.",
       )
       return
     }
-    if (!password.trim()) {
+    if (password.length < 8) {
       event.preventDefault()
-      setPasswordError("La contraseña es obligatoria.")
+      setPasswordError("La contraseña debe tener al menos 8 caracteres.")
       return
     }
 
     setRegistrationError("")
     setPasswordError("")
-    onSubmit?.(event)
+    onSubmit?.({ registrationNo: registration, password })
   }
 
   return (
@@ -71,7 +77,7 @@ export function LoginForm({
                   inputMode="numeric"
                   autoComplete="username"
                   placeholder="Ingresa tu número de registro"
-                  pattern="[0-9]{1,12}"
+                  pattern="[0-9]{7,12}"
                   maxLength={12}
                   onChange={(event) => {
                     const rawValue = event.currentTarget.value
@@ -80,7 +86,9 @@ export function LoginForm({
                     if (/\D/.test(rawValue)) {
                       showRegistrationError("Solo se permiten números.")
                     } else {
-                      setRegistrationError("")
+                      setRegistrationError(digitsOnly.length > 0 && digitsOnly.length < 7
+                        ? "El registro debe tener al menos 7 dígitos."
+                        : "")
                     }
                   }}
                   value={registration}
@@ -105,12 +113,16 @@ export function LoginForm({
                   name="password"
                   type="password"
                   autoComplete="current-password"
+                  minLength={8}
                   value={password}
                   aria-invalid={Boolean(passwordError)}
                   aria-describedby={passwordError ? "password-error" : undefined}
                   onChange={(event) => {
-                    setPassword(event.currentTarget.value)
-                    if (event.currentTarget.value.trim()) setPasswordError("")
+                    const nextPassword = event.currentTarget.value
+                    setPassword(nextPassword)
+                    setPasswordError(nextPassword.length > 0 && nextPassword.length < 8
+                      ? "La contraseña debe tener al menos 8 caracteres."
+                      : "")
                   }}
                   required
                 />
@@ -121,15 +133,12 @@ export function LoginForm({
                 )}
               </Field>
               <Field>
+                {errorMessage && <p className="registration-error" role="alert">{errorMessage}</p>}
                 <Button
                   type="submit"
-                  disabled={
-                    !/^[0-9]{1,12}$/.test(registration) ||
-                    !password.trim() ||
-                    Boolean(registrationError)
-                  }
+                  disabled={isSubmitting || !/^[0-9]{7,12}$/.test(registration) || password.length < 8 || Boolean(registrationError)}
                 >
-                  Iniciar sesión
+                  {isSubmitting ? "Iniciando sesión…" : "Iniciar sesión"}
                 </Button>
               </Field>
             </FieldGroup>

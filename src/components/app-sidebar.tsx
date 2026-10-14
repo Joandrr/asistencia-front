@@ -14,6 +14,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon } from "lucide-react"
+import { useAuthStore } from "@/stores/auth-store"
 
 // This is sample data.
 const data = {
@@ -176,6 +177,9 @@ const data = {
 }
 
 export function AppSidebar({ onLogout, ...props }: React.ComponentProps<typeof Sidebar> & { onLogout?: () => void }) {
+  const user = useAuthStore((state) => state.user)
+  const displayName = user?.fullName || user?.registrationNo || "Usuario"
+  const displayRole = user?.role === "admin" ? "Administrador" : "Estudiante"
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -186,7 +190,7 @@ export function AppSidebar({ onLogout, ...props }: React.ComponentProps<typeof S
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} onLogout={onLogout} />
+        <NavUser user={{ ...data.user, name: displayName, email: `${displayRole} · ${user?.registrationNo ?? ""}` }} onLogout={onLogout} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
