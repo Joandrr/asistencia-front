@@ -259,13 +259,19 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid rgb(147 197 253 / 22%);
+  border: 1px solid rgb(96 165 250 / 48%);
+  border-top: 0;
   background:
-    radial-gradient(18rem 12rem at 0% 50%, rgb(96 165 250 / 16%), transparent 70%),
-    linear-gradient(90deg, rgb(8 15 40 / 86%), rgb(15 28 68 / 78%));
-  backdrop-filter: blur(18px) saturate(150%);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  color: #eaf2ff;
+    radial-gradient(24rem 12rem at 0% 50%, rgb(37 99 235 / 20%), transparent 70%),
+    radial-gradient(20rem 14rem at 100% 0%, rgb(79 70 229 / 18%), transparent 72%),
+    linear-gradient(90deg, rgb(7 20 49 / 94%), rgb(15 33 78 / 90%));
+  backdrop-filter: blur(20px) saturate(135%);
+  -webkit-backdrop-filter: blur(20px) saturate(135%);
+  color: #dbeafe;
+  box-shadow:
+    0 0 0 1px rgb(59 130 246 / 18%) inset,
+    0 0 18px rgb(37 99 235 / 16%),
+    0 10px 30px rgb(2 6 23 / 30%);
 }
 
 .dashboard-header .eyebrow { color: rgb(191 219 254 / 82%); }
@@ -1238,26 +1244,30 @@
 
 /* === SIDEBAR: acento "cristal" inspirado en el login (contenido, sin exagerar) === */
 .app-sidebar {
-  --sidebar: rgb(8 15 40 / 86%);
+  --sidebar: rgb(7 20 49 / 92%);
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #93c5fd;
-  --sidebar-primary-foreground: #06102a;
-  --sidebar-accent: rgb(96 165 250 / 24%);
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #eff6ff;
+  --sidebar-accent: rgb(37 99 235 / 26%);
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgb(147 197 253 / 30%);
-  --sidebar-ring: #93c5fd;
+  --sidebar-border: rgb(147 197 253 / 18%);
+  --sidebar-ring: #60a5fa;
 }
 
 .app-sidebar [data-sidebar="sidebar-inner"] {
   position: relative;
   overflow: hidden;
+  border: 1px solid rgb(96 165 250 / 48%);
+  box-shadow:
+    0 0 0 1px rgb(191 219 254 / 12%) inset,
+    0 0 20px rgb(37 99 235 / 18%),
+    8px 0 30px rgb(2 6 23 / 34%);
   backdrop-filter: blur(22px) saturate(150%);
   -webkit-backdrop-filter: blur(22px) saturate(150%);
   background:
-    radial-gradient(20rem 14rem at 0% 0%, rgb(96 165 250 / 26%), transparent 62%),
-    radial-gradient(18rem 14rem at 100% 100%, rgb(124 58 237 / 20%), transparent 68%),
-    linear-gradient(180deg, rgb(15 28 68 / 78%) 0%, rgb(4 10 28 / 90%) 100%);
-  box-shadow: 0 0 0 1px rgb(147 197 253 / 12%) inset;
+    radial-gradient(20rem 14rem at 0% 0%, rgb(37 99 235 / 22%), transparent 62%),
+    radial-gradient(18rem 14rem at 100% 100%, rgb(79 70 229 / 18%), transparent 68%),
+    linear-gradient(180deg, rgb(15 33 78 / 92%) 0%, rgb(3 10 28 / 96%) 100%);
 }
 
 .app-sidebar [data-sidebar="sidebar-inner"]::before {
@@ -1314,16 +1324,15 @@
 }
 
 .app-sidebar [data-active="true"] {
-  border: 1px solid rgb(147 197 253 / 26%);
-  box-shadow: 0 6px 20px rgb(59 130 246 / 20%);
-  background: linear-gradient(90deg, rgb(59 130 246 / 28%), rgb(124 58 237 / 18%)) !important;
+  border: 1px solid rgb(96 165 250 / 38%);
+  box-shadow: 0 6px 20px rgb(29 78 216 / 32%);
+  background: linear-gradient(90deg, rgb(37 99 235 / 44%), rgb(79 70 229 / 26%)) !important;
   color: #fff;
 }
 
 .app-sidebar [data-sidebar="footer"] [data-slot="sidebar-menu-button"] {
-  background: rgb(255 255 255 / 4%);
-  border: 1px solid rgb(147 197 253 / 14%);
+  background: rgb(15 33 78 / 68%);
+  border: 1px solid rgb(96 165 250 / 34%);
   border-radius: 0.8rem;
+  box-shadow: 0 0 12px rgb(37 99 235 / 12%);
 }
-
-
