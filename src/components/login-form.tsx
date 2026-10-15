@@ -66,7 +66,11 @@ export function LoginForm({
           >
             <FieldGroup>
               <div className="login-form-header flex flex-col items-center gap-2 text-center">
-                <h1 className="login-title">Bienvenido</h1>
+                <span className="login-form-badge">
+                  <CalendarCheck2 aria-hidden="true" />
+                </span>
+                <p className="login-form-product">Control de asistencia</p>
+                <h1 className="login-title">Bienvenido de nuevo</h1>
                 <p className="text-balance text-muted-foreground">
                   Ingresa a tu cuenta institucional
                 </p>
@@ -202,6 +206,13 @@ export function LoginForm({
               loading="eager"
               decoding="async"
             />
+            <div className="login-art-caption">
+              <div className="login-art-icon">
+                <CalendarCheck2 aria-hidden="true" />
+              </div>
+              <p>Control de asistencia</p>
+              <span>Registra y consulta tus asistencias en tiempo real.</span>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -251,14 +251,29 @@
 }
 
 .dashboard-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   min-height: 5rem;
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
-  background: white;
+  border-bottom: 1px solid rgb(147 197 253 / 22%);
+  background:
+    radial-gradient(18rem 12rem at 0% 50%, rgb(96 165 250 / 16%), transparent 70%),
+    linear-gradient(90deg, rgb(8 15 40 / 86%), rgb(15 28 68 / 78%));
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  color: #eaf2ff;
 }
+
+.dashboard-header .eyebrow { color: rgb(191 219 254 / 82%); }
+.dashboard-header .header-copy h1 { color: #ffffff; }
+.dashboard-header [data-sidebar="trigger"],
+.dashboard-header button { color: #eaf2ff; }
+.dashboard-header [data-sidebar="trigger"]:hover,
+.dashboard-header button:hover { color: #ffffff; }
 
 .header-copy h1 {
   margin: 0.15rem 0 0;
@@ -1220,4 +1235,95 @@
   max-height: 12rem;
   overflow: auto;
 }
+
+/* === SIDEBAR: acento "cristal" inspirado en el login (contenido, sin exagerar) === */
+.app-sidebar {
+  --sidebar: rgb(8 15 40 / 86%);
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #93c5fd;
+  --sidebar-primary-foreground: #06102a;
+  --sidebar-accent: rgb(96 165 250 / 24%);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(147 197 253 / 30%);
+  --sidebar-ring: #93c5fd;
+}
+
+.app-sidebar [data-sidebar="sidebar-inner"] {
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  background:
+    radial-gradient(20rem 14rem at 0% 0%, rgb(96 165 250 / 26%), transparent 62%),
+    radial-gradient(18rem 14rem at 100% 100%, rgb(124 58 237 / 20%), transparent 68%),
+    linear-gradient(180deg, rgb(15 28 68 / 78%) 0%, rgb(4 10 28 / 90%) 100%);
+  box-shadow: 0 0 0 1px rgb(147 197 253 / 12%) inset;
+}
+
+.app-sidebar [data-sidebar="sidebar-inner"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(96 165 250 / 6%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(96 165 250 / 6%) 1px, transparent 1px);
+  background-size: 36px 36px;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 18%, transparent 86%);
+  mask-image: radial-gradient(ellipse at center, #000 18%, transparent 86%);
+}
+
+.app-sidebar [data-sidebar="sidebar-inner"] > * {
+  position: relative;
+  z-index: 1;
+}
+
+.app-sidebar [data-sidebar="header"] .bg-sidebar-primary {
+  box-shadow: 0 0 24px rgb(59 130 246 / 42%);
+  border-radius: 0.75rem;
+}
+
+.app-sidebar [data-sidebar="header"] span.truncate.font-medium {
+  background: linear-gradient(90deg, #fff, #bfdbfe 60%, #c4b5fd);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.app-sidebar [data-sidebar="header"] span.truncate.text-xs {
+  color: rgb(191 219 254 / 72%);
+}
+
+.app-sidebar [data-sidebar="group-label"] {
+  color: rgb(219 234 254 / 82%);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.app-sidebar [data-sidebar="menu-button"] {
+  color: #eaf2ff;
+  text-shadow: 0 1px 1px rgb(2 6 23 / 45%);
+}
+
+.app-sidebar [data-sidebar="menu-button"]:hover,
+.app-sidebar [data-sidebar="menu-button"]:focus-visible {
+  color: #ffffff;
+}
+
+.app-sidebar [data-active="true"] {
+  border: 1px solid rgb(147 197 253 / 26%);
+  box-shadow: 0 6px 20px rgb(59 130 246 / 20%);
+  background: linear-gradient(90deg, rgb(59 130 246 / 28%), rgb(124 58 237 / 18%)) !important;
+  color: #fff;
+}
+
+.app-sidebar [data-sidebar="footer"] [data-slot="sidebar-menu-button"] {
+  background: rgb(255 255 255 / 4%);
+  border: 1px solid rgb(147 197 253 / 14%);
+  border-radius: 0.8rem;
+}
+
 

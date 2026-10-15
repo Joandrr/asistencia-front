@@ -38,7 +38,7 @@ export function AppSidebar({
   const displayRole = isAdmin ? "Administrador" : "Estudiante"
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar variant="floating" collapsible="icon" className="app-sidebar" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
