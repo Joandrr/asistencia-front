@@ -1,21 +1,30 @@
 /* eslint-disable react-refresh/only-export-components -- TanStack file routes export Route and their component from one module. */
-import { useId, useState, type DragEvent, type FormEvent } from 'react'
-import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
-import { Dialog } from '@base-ui/react/dialog'
-import axios from 'axios'
+import { useId, useState, type DragEvent, type FormEvent } from "react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseQueryResult,
+} from "@tanstack/react-query";
+import { Dialog } from "@base-ui/react/dialog";
+import axios from "axios";
 import {
   CalendarDays,
+  CalendarRange,
+  ChevronDown,
   CircleAlert,
   Download,
+  Eye,
   FileSpreadsheet,
   FolderClock,
   FolderUp,
   Pencil,
   TriangleAlert,
   Users,
+  UserPlus,
   X,
-} from 'lucide-react'
+} from "lucide-react";
 import {
   activateModule,
   DEFAULT_GRACE_MINUTES,
@@ -34,113 +43,146 @@ import {
   type ImportPreview,
   type ImportStudentStatus,
   type ActiveModuleSummary,
-} from '@/lib/modules'
-import { hasValidSession, useAuthStore } from '@/stores/auth-store'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Field, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+  getModules,
+  getModuleStudents,
+  getActiveModuleSchedules,
+  updateActiveSchedule,
+  addStudentToActiveModule,
+  type ModuleSummary,
+  type ModuleSchedule,
+} from "@/lib/modules";
+import { hasValidSession, useAuthStore } from "@/stores/auth-store";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
-export const Route = createFileRoute('/_dashboard/modules/')({
+export const Route = createFileRoute("/_dashboard/modules/")({
   beforeLoad: () => {
-    const { user } = useAuthStore.getState()
-    if (!hasValidSession()) throw redirect({ to: '/' })
-    if (user?.role !== 'admin') throw redirect({ to: '/dashboard' })
+    const { user } = useAuthStore.getState();
+    if (!hasValidSession()) throw redirect({ to: "/" });
+    if (user?.role !== "admin") throw redirect({ to: "/dashboard" });
   },
   component: ModulesPage,
-})
+});
 
-const MODULE_NAME_MAX = 150
-const ACTIVE_MODULE_KEY = ['modules', 'active'] as const
+const MODULE_NAME_MAX = 150;
+const ACTIVE_MODULE_KEY = ["modules", "active"] as const;
 
 const FILE_COPY: Record<ImportFileKind, { title: string; columns: string }> = {
-  students: { title: 'Estudiantes', columns: 'Número de registro · Nombre completo · Correo electrónico' },
-  schedules: { title: 'Fechas de clase', columns: 'Fecha · Hora inicio · Hora fin' },
-}
+  students: {
+    title: "Estudiantes",
+    columns: "Número de registro · Nombre completo · Correo electrónico",
+  },
+  schedules: {
+    title: "Fechas de clase",
+    columns: "Fecha · Hora inicio · Hora fin",
+  },
+};
 
 const STATUS_LABEL: Record<ImportStudentStatus, string> = {
-  new: 'Nuevo',
-  existing: 'Existente',
-  reactivated: 'Reactivado',
-}
+  new: "Nuevo",
+  existing: "Existente",
+  reactivated: "Reactivado",
+};
 
 function ModulesPage() {
-  const queryClient = useQueryClient()
-  const [name, setName] = useState('')
-  const [graceInput, setGraceInput] = useState(String(DEFAULT_GRACE_MINUTES))
-  const [files, setFiles] = useState<Partial<ImportFiles>>({})
-  const [formError, setFormError] = useState('')
-  const [notice, setNotice] = useState('')
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [acknowledged, setAcknowledged] = useState(false)
-  const [formVersion, setFormVersion] = useState(0)
+  const queryClient = useQueryClient();
+  const [name, setName] = useState("");
+  const [graceInput, setGraceInput] = useState(String(DEFAULT_GRACE_MINUTES));
+  const [files, setFiles] = useState<Partial<ImportFiles>>({});
+  const [formError, setFormError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [formVersion, setFormVersion] = useState(0);
 
-  const activeQuery = useQuery({ queryKey: ACTIVE_MODULE_KEY, queryFn: getActiveModule })
-  const previewMutation = useMutation({ mutationFn: previewModuleImport })
+  const activeQuery = useQuery({
+    queryKey: ACTIVE_MODULE_KEY,
+    queryFn: getActiveModule,
+  });
+  const previewMutation = useMutation({ mutationFn: previewModuleImport });
   const activateMutation = useMutation({
     mutationFn: activateModule,
     onSuccess: async (result) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ACTIVE_MODULE_KEY }),
-        queryClient.invalidateQueries({ queryKey: ['users'] }),
-      ])
-      setConfirmOpen(false)
-      setName('')
-      setGraceInput(String(DEFAULT_GRACE_MINUTES))
-      setFiles({})
-      setFormVersion((value) => value + 1)
-      previewMutation.reset()
-      setNotice(`Módulo «${result.module.name}» activado con ${result.students.total} estudiantes, ${result.schedules.total} fechas de clase y ${result.graceMinutes} minutos de tolerancia.`)
+        queryClient.invalidateQueries({ queryKey: ["modules", "all"] }),
+        queryClient.invalidateQueries({ queryKey: ["users"] }),
+      ]);
+      setConfirmOpen(false);
+      setName("");
+      setGraceInput(String(DEFAULT_GRACE_MINUTES));
+      setFiles({});
+      setFormVersion((value) => value + 1);
+      previewMutation.reset();
+      setNotice(
+        `Módulo «${result.module.name}» activado con ${result.students.total} estudiantes, ${result.schedules.total} fechas de clase y ${result.graceMinutes} minutos de tolerancia.`,
+      );
     },
     onError: (error) => {
       // The server re-validates the files; show the fresh errors in the preview.
-      if (axios.isAxiosError(error) && error.response?.status === 422 && isComplete(files)) {
-        setConfirmOpen(false)
-        previewMutation.mutate(files)
+      if (
+        axios.isAxiosError(error) &&
+        error.response?.status === 422 &&
+        isComplete(files)
+      ) {
+        setConfirmOpen(false);
+        previewMutation.mutate(files);
       }
     },
-  })
+  });
 
-  const preview = previewMutation.data
-  const trimmedName = name.replace(/\s+/g, ' ').trim()
-  const nameValid = trimmedName.length > 0 && trimmedName.length <= MODULE_NAME_MAX
-  const graceMinutes = parseGraceMinutes(graceInput)
-  const busy = previewMutation.isPending || activateMutation.isPending
+  const preview = previewMutation.data;
+  const trimmedName = name.replace(/\s+/g, " ").trim();
+  const nameValid =
+    trimmedName.length > 0 && trimmedName.length <= MODULE_NAME_MAX;
+  const graceMinutes = parseGraceMinutes(graceInput);
+  const busy = previewMutation.isPending || activateMutation.isPending;
 
   function changeFile(kind: ImportFileKind, file: File | null) {
-    setNotice('')
-    setFormError('')
-    previewMutation.reset()
+    setNotice("");
+    setFormError("");
+    previewMutation.reset();
     if (file) {
-      const problem = validateFile(file)
+      const problem = validateFile(file);
       if (problem) {
-        setFormError(`${FILE_COPY[kind].title}: ${problem}`)
-        return
+        setFormError(`${FILE_COPY[kind].title}: ${problem}`);
+        return;
       }
     }
-    setFiles((current) => ({ ...current, [kind]: file ?? undefined }))
+    setFiles((current) => ({ ...current, [kind]: file ?? undefined }));
   }
 
   function validate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setNotice('')
-    setFormError('')
-    if (!isComplete(files)) return setFormError('Selecciona el archivo de estudiantes y el de fechas de clase.')
-    previewMutation.mutate(files)
+    event.preventDefault();
+    setNotice("");
+    setFormError("");
+    if (!isComplete(files))
+      return setFormError(
+        "Selecciona el archivo de estudiantes y el de fechas de clase.",
+      );
+    previewMutation.mutate(files);
   }
 
   function openConfirm() {
-    setFormError('')
-    if (!nameValid) return setFormError(`Escribe el nombre del módulo (máximo ${MODULE_NAME_MAX} caracteres).`)
-    if (graceMinutes === null) return setFormError(`El tiempo de gracia debe ser un número entero entre 0 y ${MAX_GRACE_MINUTES} minutos.`)
-    activateMutation.reset()
-    setAcknowledged(false)
-    setConfirmOpen(true)
+    setFormError("");
+    if (!nameValid)
+      return setFormError(
+        `Escribe el nombre del módulo (máximo ${MODULE_NAME_MAX} caracteres).`,
+      );
+    if (graceMinutes === null)
+      return setFormError(
+        `El tiempo de gracia debe ser un número entero entre 0 y ${MAX_GRACE_MINUTES} minutos.`,
+      );
+    activateMutation.reset();
+    setAcknowledged(false);
+    setConfirmOpen(true);
   }
 
   function confirmActivation() {
-    if (!isComplete(files) || !acknowledged || graceMinutes === null) return
-    activateMutation.mutate({ name: trimmedName, graceMinutes, files })
+    if (!isComplete(files) || !acknowledged || graceMinutes === null) return;
+    activateMutation.mutate({ name: trimmedName, graceMinutes, files });
   }
 
   return (
@@ -149,18 +191,36 @@ function ModulesPage() {
         <div>
           <p className="eyebrow">ADMINISTRACIÓN</p>
           <h2>Módulos</h2>
-          <p>Configura el módulo activo o carga los estudiantes y las fechas para iniciar uno nuevo.</p>
+          <p>
+            Configura el módulo activo o carga los estudiantes y las fechas para
+            iniciar uno nuevo.
+          </p>
         </div>
       </section>
 
-      {notice && <p className="users-notice" role="status">{notice}</p>}
+      {notice && (
+        <p className="users-notice" role="status">
+          {notice}
+        </p>
+      )}
 
       <ActiveModuleCard query={activeQuery} onGraceSaved={setNotice} />
 
+      <ModuleManagementSection />
+
       <Card className="users-card">
         <CardContent className="users-card-content">
-          <form key={formVersion} className="modules-form" onSubmit={validate} noValidate>
-            <StepHeading step={1} title="Datos y archivos" description="Usa las plantillas para evitar errores de formato. Solo se admiten archivos .xlsx de hasta 2 MB." />
+          <form
+            key={formVersion}
+            className="modules-form"
+            onSubmit={validate}
+            noValidate
+          >
+            <StepHeading
+              step={1}
+              title="Nuevo Modulo"
+              description="Usa las plantillas para evitar errores de formato. Solo se admiten archivos .xlsx de hasta 2 MB."
+            />
             <div className="modules-fields">
               <Field>
                 <FieldLabel htmlFor="module-name">Nombre del módulo</FieldLabel>
@@ -169,13 +229,18 @@ function ModulesPage() {
                   value={name}
                   maxLength={MODULE_NAME_MAX}
                   placeholder="Ej.: Módulo 3 - Desarrollo Backend"
-                  onChange={(event) => { setName(event.currentTarget.value); setNotice('') }}
+                  onChange={(event) => {
+                    setName(event.currentTarget.value);
+                    setNotice("");
+                  }}
                   aria-invalid={Boolean(name) && !nameValid}
                   required
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="module-grace">Tiempo de gracia (minutos)</FieldLabel>
+                <FieldLabel htmlFor="module-grace">
+                  Tiempo de gracia (minutos)
+                </FieldLabel>
                 <Input
                   id="module-grace"
                   type="number"
@@ -184,16 +249,21 @@ function ModulesPage() {
                   max={MAX_GRACE_MINUTES}
                   step={1}
                   value={graceInput}
-                  onChange={(event) => { setGraceInput(event.currentTarget.value); setNotice('') }}
+                  onChange={(event) => {
+                    setGraceInput(event.currentTarget.value);
+                    setNotice("");
+                  }}
                   aria-invalid={graceMinutes === null}
                   aria-describedby="module-grace-hint"
                   required
                 />
-                <span id="module-grace-hint" className="profile-hint">Dentro de este margen es Presente; después, Atraso.</span>
+                <span id="module-grace-hint" className="profile-hint">
+                  Dentro de este margen es Presente; después, Atraso.
+                </span>
               </Field>
             </div>
             <div className="modules-upload-grid">
-              {(['students', 'schedules'] as const).map((kind) => (
+              {(["students", "schedules"] as const).map((kind) => (
                 <FileDropZone
                   key={kind}
                   kind={kind}
@@ -203,12 +273,20 @@ function ModulesPage() {
                 />
               ))}
             </div>
-            {formError && <p className="users-error" role="alert">{formError}</p>}
-            {previewMutation.error && <p className="users-error" role="alert">{getModulesError(previewMutation.error)}</p>}
+            {formError && (
+              <p className="users-error" role="alert">
+                {formError}
+              </p>
+            )}
+            {previewMutation.error && (
+              <p className="users-error" role="alert">
+                {getModulesError(previewMutation.error)}
+              </p>
+            )}
             <div className="modules-actions">
               <Button type="submit" disabled={!isComplete(files) || busy}>
                 <FileSpreadsheet aria-hidden="true" />
-                {previewMutation.isPending ? 'Validando…' : 'Validar archivos'}
+                {previewMutation.isPending ? "Validando…" : "Validar archivos"}
               </Button>
             </div>
           </form>
@@ -218,37 +296,79 @@ function ModulesPage() {
       {preview && (
         <PreviewSection
           preview={preview}
-          canActivate={preview.valid && nameValid && graceMinutes !== null && !busy}
+          canActivate={
+            preview.valid && nameValid && graceMinutes !== null && !busy
+          }
           nameMissing={!nameValid}
           graceMinutes={graceMinutes}
           onActivate={openConfirm}
         />
       )}
 
-      <Dialog.Root open={confirmOpen} onOpenChange={(open) => { if (!open && !activateMutation.isPending) setConfirmOpen(false) }}>
+      <Dialog.Root
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          if (!open && !activateMutation.isPending) setConfirmOpen(false);
+        }}
+      >
         {confirmOpen && preview && (
           <Dialog.Portal>
             <Dialog.Backdrop className="users-dialog-backdrop" />
             <Dialog.Popup className="users-dialog users-confirm-dialog">
-              <Dialog.Title className="users-dialog-title">Activar nuevo módulo</Dialog.Title>
+              <Dialog.Title className="users-dialog-title">
+                Activar nuevo módulo
+              </Dialog.Title>
               <Dialog.Description className="users-dialog-description">
-                Se activará <strong>{trimmedName}</strong> con {preview.students.total} estudiantes, {preview.schedules.total} fechas de clase y <strong>{graceMinutes} minutos</strong> de tolerancia. El nuevo módulo empezará sin registros de asistencia.
+                Se activará <strong>{trimmedName}</strong> con{" "}
+                {preview.students.total} estudiantes, {preview.schedules.total}{" "}
+                fechas de clase y <strong>{graceMinutes} minutos</strong> de
+                tolerancia. El nuevo módulo empezará sin registros de
+                asistencia.
               </Dialog.Description>
               {preview.activeModule && (
                 <p className="modules-confirm-warning">
                   <TriangleAlert aria-hidden="true" />
-                  <span>El módulo <strong>{preview.activeModule.name}</strong> dejará de estar activo. Sus datos se conservan, pero ya no se mostrarán en la operación diaria.</span>
+                  <span>
+                    El módulo <strong>{preview.activeModule.name}</strong>{" "}
+                    dejará de estar activo. Sus datos se conservan, pero ya no
+                    se mostrarán en la operación diaria.
+                  </span>
                 </p>
               )}
               <label className="modules-confirm-check">
-                <input type="checkbox" checked={acknowledged} disabled={activateMutation.isPending} onChange={(event) => setAcknowledged(event.currentTarget.checked)} />
-                <span>{preview.activeModule ? 'Entiendo que el módulo actual dejará de estar activo.' : 'Confirmo que los datos son correctos.'}</span>
+                <input
+                  type="checkbox"
+                  checked={acknowledged}
+                  disabled={activateMutation.isPending}
+                  onChange={(event) =>
+                    setAcknowledged(event.currentTarget.checked)
+                  }
+                />
+                <span>
+                  {preview.activeModule
+                    ? "Entiendo que el módulo actual dejará de estar activo."
+                    : "Confirmo que los datos son correctos."}
+                </span>
               </label>
-              {activateMutation.error && <p className="users-error" role="alert">{getModulesError(activateMutation.error)}</p>}
+              {activateMutation.error && (
+                <p className="users-error" role="alert">
+                  {getModulesError(activateMutation.error)}
+                </p>
+              )}
               <div className="users-dialog-actions">
-                <Button variant="outline" disabled={activateMutation.isPending} onClick={() => setConfirmOpen(false)}>Cancelar</Button>
-                <Button variant="destructive" disabled={!acknowledged || activateMutation.isPending} onClick={confirmActivation}>
-                  {activateMutation.isPending ? 'Activando…' : 'Activar módulo'}
+                <Button
+                  variant="outline"
+                  disabled={activateMutation.isPending}
+                  onClick={() => setConfirmOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  disabled={!acknowledged || activateMutation.isPending}
+                  onClick={confirmActivation}
+                >
+                  {activateMutation.isPending ? "Activando…" : "Activar módulo"}
                 </Button>
               </div>
             </Dialog.Popup>
@@ -256,40 +376,56 @@ function ModulesPage() {
         )}
       </Dialog.Root>
     </main>
-  )
+  );
 }
 
 function ActiveModuleCard({
   query,
   onGraceSaved,
 }: {
-  query: UseQueryResult<ActiveModuleSummary | null>
-  onGraceSaved: (message: string) => void
+  query: UseQueryResult<ActiveModuleSummary | null>;
+  onGraceSaved: (message: string) => void;
 }) {
-  const [editingGrace, setEditingGrace] = useState(false)
+  const [editingGrace, setEditingGrace] = useState(false);
+  const [editingSchedules, setEditingSchedules] = useState(false);
+  const [addingStudent, setAddingStudent] = useState(false);
   if (query.isPending) {
-    return <section className="modules-active modules-active-muted"><FolderClock aria-hidden="true" /><p>Cargando módulo activo…</p></section>
+    return (
+      <section className="modules-active modules-active-muted">
+        <FolderClock aria-hidden="true" />
+        <p>Cargando módulo activo…</p>
+      </section>
+    );
   }
   if (query.isError) {
     return (
       <section className="modules-active modules-active-muted">
         <CircleAlert aria-hidden="true" />
         <p>{getModulesError(query.error)}</p>
-        <Button variant="outline" size="sm" onClick={() => void query.refetch()}>Reintentar</Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void query.refetch()}
+        >
+          Reintentar
+        </Button>
       </section>
-    )
+    );
   }
-  const module = query.data
+  const module = query.data;
   if (!module) {
     return (
       <section className="modules-active modules-active-muted">
         <FolderClock aria-hidden="true" />
         <div>
           <p className="eyebrow">MÓDULO ACTIVO</p>
-          <p>Todavía no hay un módulo activo. Carga los archivos para crear el primero.</p>
+          <p>
+            Todavía no hay un módulo activo. Carga los archivos para crear el
+            primero.
+          </p>
         </div>
       </section>
-    )
+    );
   }
   return (
     <section className="modules-active" aria-label="Módulo activo">
@@ -299,27 +435,578 @@ function ActiveModuleCard({
         <p>Activado el {formatDateTime(module.activatedAt)}</p>
       </div>
       <dl className="modules-active-stats">
-        <div><dt>Estudiantes</dt><dd>{module.studentsCount}</dd></div>
-        <div><dt>Fechas de clase</dt><dd>{module.schedulesCount}</dd></div>
+        <div>
+          <dt>Estudiantes</dt>
+          <dd>{module.studentsCount}</dd>
+        </div>
+        <div>
+          <dt>Fechas de clase</dt>
+          <dd>{module.schedulesCount}</dd>
+        </div>
         <div>
           <dt>Tolerancia</dt>
           <dd className="modules-active-grace">
             {module.graceMinutes} min
-            <Button variant="outline" size="icon-xs" aria-label="Editar tiempo de gracia" onClick={() => setEditingGrace(true)}>
+            <Button
+              variant="outline"
+              size="icon-xs"
+              aria-label="Editar tiempo de gracia"
+              onClick={() => setEditingGrace(true)}
+            >
               <Pencil aria-hidden="true" />
             </Button>
           </dd>
         </div>
-        <div className="modules-active-period"><dt>Periodo</dt><dd>{formatDateRange(module.firstDate, module.lastDate)}</dd></div>
+        <div className="modules-active-period">
+          <dt>Periodo</dt>
+          <dd>{formatDateRange(module.firstDate, module.lastDate)}</dd>
+        </div>
       </dl>
+      <div className="modules-active-actions">
+        <Button variant="outline" onClick={() => setEditingSchedules(true)}>
+          <CalendarRange aria-hidden="true" /> Editar fechas de clase
+        </Button>
+        <Button onClick={() => setAddingStudent(true)}>
+          <UserPlus aria-hidden="true" /> Agregar estudiante
+        </Button>
+      </div>
       <GracePeriodDialog
         open={editingGrace}
         current={module.graceMinutes}
         onClose={() => setEditingGrace(false)}
-        onSaved={(message) => { setEditingGrace(false); onGraceSaved(message) }}
+        onSaved={(message) => {
+          setEditingGrace(false);
+          onGraceSaved(message);
+        }}
+      />
+      <ActiveSchedulesDialog
+        open={editingSchedules}
+        onClose={() => setEditingSchedules(false)}
+      />
+      <AddModuleStudentDialog
+        open={addingStudent}
+        onClose={() => setAddingStudent(false)}
+        onSaved={(message) => {
+          setAddingStudent(false);
+          onGraceSaved(message);
+        }}
       />
     </section>
-  )
+  );
+}
+
+function ModuleManagementSection() {
+  const [expanded, setExpanded] = useState(false);
+  const modulesQuery = useQuery({
+    queryKey: ["modules", "all"],
+    queryFn: getModules,
+    enabled: expanded,
+  });
+  const [studentsModule, setStudentsModule] = useState<ModuleSummary | null>(
+    null,
+  );
+
+  return (
+    <Card className="users-card modules-history-card">
+      <CardContent className="users-card-content">
+        <div className="modules-history-heading">
+          <div>
+            <p className="eyebrow">HISTORIAL</p>
+            <h3>Todos los módulos</h3>
+            <p>
+              Abre la lista cuando necesites consultar otros módulos y sus
+              estudiantes.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((value) => !value)}
+          >
+            {expanded ? "Ocultar módulos" : "Ver todos los módulos"}
+            <ChevronDown
+              className={expanded ? "modules-chevron-open" : ""}
+              aria-hidden="true"
+            />
+          </Button>
+        </div>
+        {expanded &&
+          (modulesQuery.isPending ? (
+            <div className="users-empty">
+              <FolderClock aria-hidden="true" />
+              <p>Cargando módulos…</p>
+            </div>
+          ) : modulesQuery.isError ? (
+            <div className="modules-load-error" role="alert">
+              <CircleAlert aria-hidden="true" />
+              <span>{getModulesError(modulesQuery.error)}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void modulesQuery.refetch()}
+              >
+                Reintentar
+              </Button>
+            </div>
+          ) : modulesQuery.data?.length === 0 ? (
+            <div className="users-empty">
+              <FolderClock aria-hidden="true" />
+              <p>Aún no hay módulos registrados.</p>
+            </div>
+          ) : (
+            <div className="users-table-wrap modules-table-wrap">
+              <table className="users-table modules-list-table">
+                <thead>
+                  <tr>
+                    <th>Módulo</th>
+                    <th>Estado</th>
+                    <th>Estudiantes</th>
+                    <th>Clases</th>
+                    <th>Periodo</th>
+                    <th>
+                      <span className="sr-only">Acciones</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(modulesQuery.data ?? []).map((module) => (
+                    <tr key={module.id}>
+                      <td>
+                        <strong>{module.name}</strong>
+                        <span className="modules-row-meta">
+                          Tolerancia: {module.graceMinutes} min
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={`modules-status ${module.isActive ? "modules-status-active" : "modules-status-closed"}`}
+                        >
+                          {module.isActive ? "Activo" : "Cerrado"}
+                        </span>
+                      </td>
+                      <td>{module.studentsCount}</td>
+                      <td>{module.schedulesCount}</td>
+                      <td>
+                        {formatDateRange(module.firstDate, module.lastDate)}
+                      </td>
+                      <td>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setStudentsModule(module)}
+                        >
+                          <Eye aria-hidden="true" /> Ver estudiantes
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}{" "}
+      </CardContent>
+      <ModuleStudentsDialog
+        module={studentsModule}
+        onClose={() => setStudentsModule(null)}
+      />
+    </Card>
+  );
+}
+
+function ModuleStudentsDialog({
+  module,
+  onClose,
+}: {
+  module: ModuleSummary | null;
+  onClose: () => void;
+}) {
+  const query = useQuery({
+    queryKey: ["modules", module?.id, "students"],
+    queryFn: () => getModuleStudents(module!.id),
+    enabled: Boolean(module),
+  });
+  return (
+    <Dialog.Root
+      open={Boolean(module)}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      {module && (
+        <Dialog.Portal>
+          <Dialog.Backdrop className="users-dialog-backdrop" />
+          <Dialog.Popup className="users-dialog modules-roster-dialog">
+            <Dialog.Title className="users-dialog-title">
+              Estudiantes de {module.name}
+            </Dialog.Title>
+            <Dialog.Description className="users-dialog-description">
+              {module.isActive ? "Módulo activo" : "Módulo cerrado"} ·{" "}
+              {module.studentsCount} inscritos
+            </Dialog.Description>
+            {query.isPending ? (
+              <div className="users-empty">
+                <Users aria-hidden="true" />
+                <p>Cargando estudiantes…</p>
+              </div>
+            ) : query.isError ? (
+              <p className="users-error" role="alert">
+                {getModulesError(query.error)}
+              </p>
+            ) : query.data.students.length === 0 ? (
+              <div className="users-empty">
+                <Users aria-hidden="true" />
+                <p>Este módulo no tiene estudiantes registrados.</p>
+              </div>
+            ) : (
+              <div className="users-table-wrap modules-roster-list">
+                <table className="users-table">
+                  <thead>
+                    <tr>
+                      <th>N.º de registro</th>
+                      <th>Estudiante</th>
+                      <th>Correo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {query.data.students.map((student) => (
+                      <tr key={student.id}>
+                        <td>{student.registrationNo}</td>
+                        <td>{student.fullName || "Sin nombre"}</td>
+                        <td>{student.email || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="users-dialog-actions">
+              <Button variant="outline" onClick={onClose}>
+                Cerrar
+              </Button>
+            </div>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      )}
+    </Dialog.Root>
+  );
+}
+
+function ActiveSchedulesDialog({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: ["modules", "active", "schedules"],
+    queryFn: getActiveModuleSchedules,
+    enabled: open,
+  });
+  const [editing, setEditing] = useState<ModuleSchedule | null>(null);
+  const [saved, setSaved] = useState(false);
+  const mutation = useMutation({
+    mutationFn: updateActiveSchedule,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["modules", "active", "schedules"],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["modules", "all"] }),
+        queryClient.invalidateQueries({ queryKey: ["modules", "active"] }),
+      ]);
+      setEditing(null);
+      setSaved(true);
+    },
+  });
+  return (
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) {
+          setEditing(null);
+          mutation.reset();
+          onClose();
+        }
+      }}
+    >
+      {open && (
+        <Dialog.Portal>
+          <Dialog.Backdrop className="users-dialog-backdrop" />
+          <Dialog.Popup className="users-dialog modules-schedule-dialog">
+            <Dialog.Title className="users-dialog-title">
+              Fechas de clase · {query.data?.module.name || "módulo activo"}
+            </Dialog.Title>
+            <Dialog.Description className="users-dialog-description">
+              Puedes cambiar la fecha y el horario de la clase. Las asistencias
+              registradas seguirán asociadas a esa clase en la nueva fecha.
+            </Dialog.Description>
+            {saved && (
+              <p className="users-notice" role="status">
+                La fecha y el horario de la clase se actualizaron correctamente.
+              </p>
+            )}
+            {query.isPending ? (
+              <div className="users-empty">
+                <CalendarDays aria-hidden="true" />
+                <p>Cargando fechas…</p>
+              </div>
+            ) : query.isError ? (
+              <p className="users-error" role="alert">
+                {getModulesError(query.error)}
+              </p>
+            ) : query.data.schedules.length === 0 ? (
+              <div className="users-empty">
+                <CalendarDays aria-hidden="true" />
+                <p>No hay clases programadas.</p>
+              </div>
+            ) : (
+              <div className="users-table-wrap modules-schedules-list">
+                <table className="users-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Horario</th>
+                      <th>Presente hasta</th>
+                      <th>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {query.data.schedules.map((schedule) => (
+                      <tr key={schedule.id}>
+                        <td>{formatIsoDate(schedule.classDate)}</td>
+                        <td>
+                          {schedule.startTime.slice(0, 5)}–
+                          {schedule.endTime.slice(0, 5)}
+                        </td>
+                        <td>{schedule.graceTime.slice(0, 5)}</td>
+                        <td>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              mutation.reset();
+                              setEditing(schedule);
+                            }}
+                            disabled={Boolean(editing)}
+                          >
+                            <Pencil aria-hidden="true" /> Editar
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {editing && (
+              <form
+                className="modules-schedule-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const form = new FormData(event.currentTarget);
+                  mutation.mutate({
+                    id: editing.id,
+                    classDate: String(form.get("classDate")),
+                    startTime: String(form.get("startTime")),
+                    endTime: String(form.get("endTime")),
+                  });
+                }}
+              >
+                <h3>Editar clase del {formatIsoDate(editing.classDate)}</h3>
+                <div className="modules-schedule-fields">
+                  <Field>
+                    <FieldLabel htmlFor="schedule-date">Fecha</FieldLabel>
+                    <Input
+                      id="schedule-date"
+                      name="classDate"
+                      type="date"
+                      defaultValue={editing.classDate.slice(0, 10)}
+                      required
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="schedule-start">
+                      Hora de inicio
+                    </FieldLabel>
+                    <Input
+                      id="schedule-start"
+                      name="startTime"
+                      type="time"
+                      defaultValue={editing.startTime.slice(0, 5)}
+                      required
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="schedule-end">Hora de fin</FieldLabel>
+                    <Input
+                      id="schedule-end"
+                      name="endTime"
+                      type="time"
+                      defaultValue={editing.endTime.slice(0, 5)}
+                      required
+                    />
+                  </Field>
+                </div>
+                {mutation.error && (
+                  <p className="users-error" role="alert">
+                    {getModulesError(mutation.error)}
+                  </p>
+                )}
+                <div className="users-dialog-actions">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={mutation.isPending}
+                    onClick={() => {
+                      setEditing(null);
+                      mutation.reset();
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={mutation.isPending}>
+                    {mutation.isPending ? "Guardando…" : "Guardar cambios"}
+                  </Button>
+                </div>
+              </form>
+            )}
+            {!editing && (
+              <div className="users-dialog-actions">
+                <Button variant="outline" onClick={onClose}>
+                  Cerrar
+                </Button>
+              </div>
+            )}
+          </Dialog.Popup>
+        </Dialog.Portal>
+      )}
+    </Dialog.Root>
+  );
+}
+
+function AddModuleStudentDialog({
+  open,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSaved: (message: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: addStudentToActiveModule,
+    onSuccess: async (result) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ACTIVE_MODULE_KEY }),
+        queryClient.invalidateQueries({ queryKey: ["modules", "all"] }),
+        queryClient.invalidateQueries({ queryKey: ["users"] }),
+      ]);
+      onSaved(
+        `Se agregó a ${result.student.fullName} al módulo ${result.module.name}.`,
+      );
+    },
+  });
+
+  function close() {
+    if (mutation.isPending) return;
+    mutation.reset();
+    onClose();
+  }
+
+  return (
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) close();
+      }}
+    >
+      {open && (
+        <Dialog.Portal>
+          <Dialog.Backdrop className="users-dialog-backdrop" />
+          <Dialog.Popup className="users-dialog users-confirm-dialog">
+            <Dialog.Title className="users-dialog-title">
+              Agregar estudiante
+            </Dialog.Title>
+            <Dialog.Description className="users-dialog-description">
+              Se inscribirá en el módulo activo. Si su cuenta ya existe, se
+              conservará y se actualizarán sus datos.
+            </Dialog.Description>
+            <form
+              className="user-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const form = new FormData(event.currentTarget);
+                mutation.mutate({
+                  registrationNo: String(form.get("registrationNo")),
+                  fullName: String(form.get("fullName")),
+                  email: String(form.get("email")),
+                });
+              }}
+            >
+              <Field>
+                <FieldLabel htmlFor="new-student-registration">
+                  Número de registro
+                </FieldLabel>
+                <Input
+                  id="new-student-registration"
+                  name="registrationNo"
+                  inputMode="numeric"
+                  pattern="[0-9]{6,12}"
+                  minLength={6}
+                  maxLength={12}
+                  required
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="new-student-name">
+                  Nombre completo
+                </FieldLabel>
+                <Input
+                  id="new-student-name"
+                  name="fullName"
+                  maxLength={200}
+                  required
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="new-student-email">
+                  Correo electrónico
+                </FieldLabel>
+                <Input
+                  id="new-student-email"
+                  name="email"
+                  type="email"
+                  maxLength={254}
+                  required
+                />
+              </Field>
+              {mutation.error && (
+                <p className="users-error" role="alert">
+                  {getModulesError(mutation.error)}
+                </p>
+              )}
+              <div className="users-dialog-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={mutation.isPending}
+                  onClick={close}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={mutation.isPending}>
+                  {mutation.isPending ? "Agregando…" : "Agregar al módulo"}
+                </Button>
+              </div>
+            </form>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      )}
+    </Dialog.Root>
+  );
 }
 
 function GracePeriodDialog({
@@ -328,43 +1015,58 @@ function GracePeriodDialog({
   onClose,
   onSaved,
 }: {
-  open: boolean
-  current: number
-  onClose: () => void
-  onSaved: (message: string) => void
+  open: boolean;
+  current: number;
+  onClose: () => void;
+  onSaved: (message: string) => void;
 }) {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: updateGracePeriod,
     onSuccess: async (result) => {
-      await queryClient.invalidateQueries({ queryKey: ACTIVE_MODULE_KEY })
-      onSaved(result.unchanged
-        ? 'El tiempo de gracia no cambió.'
-        : `Tiempo de gracia actualizado a ${result.graceMinutes} minutos para ${result.updatedSchedules} ${result.updatedSchedules === 1 ? 'clase' : 'clases'} de hoy en adelante.`)
+      await queryClient.invalidateQueries({ queryKey: ACTIVE_MODULE_KEY });
+      await queryClient.invalidateQueries({ queryKey: ["modules", "all"] });
+      onSaved(
+        result.unchanged
+          ? "El tiempo de gracia no cambió."
+          : `Tiempo de gracia actualizado a ${result.graceMinutes} minutos para ${result.updatedSchedules} ${result.updatedSchedules === 1 ? "clase" : "clases"} de hoy en adelante.`,
+      );
     },
-  })
+  });
 
   function close() {
-    if (mutation.isPending) return
-    mutation.reset()
-    onClose()
+    if (mutation.isPending) return;
+    mutation.reset();
+    onClose();
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={(next) => { if (!next) close() }}>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) close();
+      }}
+    >
       {open && (
         <Dialog.Portal>
           <Dialog.Backdrop className="users-dialog-backdrop" />
           <Dialog.Popup className="users-dialog users-confirm-dialog">
-            <Dialog.Title className="users-dialog-title">Tiempo de gracia</Dialog.Title>
+            <Dialog.Title className="users-dialog-title">
+              Tiempo de gracia
+            </Dialog.Title>
             <Dialog.Description className="users-dialog-description">
-              Minutos desde la hora de inicio en los que la marca cuenta como <strong>Presente</strong>; después cuenta como <strong>Atraso</strong>. Se aplica a las clases de hoy en adelante; las fechas pasadas conservan su tolerancia.
+              Minutos desde la hora de inicio en los que la marca cuenta como{" "}
+              <strong>Presente</strong>; después cuenta como{" "}
+              <strong>Atraso</strong>. Se aplica a las clases de hoy en
+              adelante; las fechas pasadas conservan su tolerancia.
             </Dialog.Description>
             <GracePeriodForm
               key={current}
               current={current}
               busy={mutation.isPending}
-              serverError={mutation.error ? getModulesError(mutation.error) : ''}
+              serverError={
+                mutation.error ? getModulesError(mutation.error) : ""
+              }
               onCancel={close}
               onSubmit={(minutes) => mutation.mutate(minutes)}
             />
@@ -372,7 +1074,7 @@ function GracePeriodDialog({
         </Dialog.Portal>
       )}
     </Dialog.Root>
-  )
+  );
 }
 
 function GracePeriodForm({
@@ -382,21 +1084,24 @@ function GracePeriodForm({
   onCancel,
   onSubmit,
 }: {
-  current: number
-  busy: boolean
-  serverError: string
-  onCancel: () => void
-  onSubmit: (minutes: number) => void
+  current: number;
+  busy: boolean;
+  serverError: string;
+  onCancel: () => void;
+  onSubmit: (minutes: number) => void;
 }) {
-  const [value, setValue] = useState(String(current))
-  const minutes = parseGraceMinutes(value)
-  const unchanged = minutes === current
+  const [value, setValue] = useState(String(current));
+  const minutes = parseGraceMinutes(value);
+  const unchanged = minutes === current;
 
   return (
     <form
       className="user-form"
       noValidate
-      onSubmit={(event) => { event.preventDefault(); if (minutes !== null && !unchanged) onSubmit(minutes) }}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (minutes !== null && !unchanged) onSubmit(minutes);
+      }}
     >
       <Field>
         <FieldLabel htmlFor="grace-minutes">Minutos de tolerancia</FieldLabel>
@@ -413,28 +1118,58 @@ function GracePeriodForm({
           aria-invalid={minutes === null}
           onChange={(event) => setValue(event.currentTarget.value)}
         />
-        <span className="profile-hint">Número entero entre 0 y {MAX_GRACE_MINUTES}. Con 0, cualquier marca después del inicio es Atraso.</span>
+        <span className="profile-hint">
+          Número entero entre 0 y {MAX_GRACE_MINUTES}. Con 0, cualquier marca
+          después del inicio es Atraso.
+        </span>
       </Field>
-      {minutes === null && <p className="users-error" role="alert">Ingresa un número entero entre 0 y {MAX_GRACE_MINUTES}.</p>}
-      {serverError && <p className="users-error" role="alert">{serverError}</p>}
+      {minutes === null && (
+        <p className="users-error" role="alert">
+          Ingresa un número entero entre 0 y {MAX_GRACE_MINUTES}.
+        </p>
+      )}
+      {serverError && (
+        <p className="users-error" role="alert">
+          {serverError}
+        </p>
+      )}
       <div className="users-dialog-actions">
-        <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>Cancelar</Button>
-        <Button type="submit" disabled={busy || minutes === null || unchanged}>{busy ? 'Guardando…' : 'Guardar'}</Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={busy}
+          onClick={onCancel}
+        >
+          Cancelar
+        </Button>
+        <Button type="submit" disabled={busy || minutes === null || unchanged}>
+          {busy ? "Guardando…" : "Guardar"}
+        </Button>
       </div>
     </form>
-  )
+  );
 }
 
-function StepHeading({ step, title, description }: { step: number; title: string; description: string }) {
+function StepHeading({
+  step,
+  title,
+  description,
+}: {
+  step: number;
+  title: string;
+  description: string;
+}) {
   return (
     <div className="modules-step">
-      <span className="modules-step-number" aria-hidden="true">{step}</span>
+      <span className="modules-step-number" aria-hidden="true">
+        {step}
+      </span>
       <div>
         <h3>{title}</h3>
         <p>{description}</p>
       </div>
     </div>
-  )
+  );
 }
 
 function FileDropZone({
@@ -443,34 +1178,34 @@ function FileDropZone({
   disabled,
   onChange,
 }: {
-  kind: ImportFileKind
-  file?: File
-  disabled: boolean
-  onChange: (file: File | null) => void
+  kind: ImportFileKind;
+  file?: File;
+  disabled: boolean;
+  onChange: (file: File | null) => void;
 }) {
-  const inputId = useId()
-  const [dragging, setDragging] = useState(false)
-  const [templateError, setTemplateError] = useState('')
-  const [downloading, setDownloading] = useState(false)
-  const copy = FILE_COPY[kind]
+  const inputId = useId();
+  const [dragging, setDragging] = useState(false);
+  const [templateError, setTemplateError] = useState("");
+  const [downloading, setDownloading] = useState(false);
+  const copy = FILE_COPY[kind];
 
   function drop(event: DragEvent<HTMLLabelElement>) {
-    event.preventDefault()
-    setDragging(false)
-    if (disabled) return
-    const dropped = event.dataTransfer.files[0]
-    if (dropped) onChange(dropped)
+    event.preventDefault();
+    setDragging(false);
+    if (disabled) return;
+    const dropped = event.dataTransfer.files[0];
+    if (dropped) onChange(dropped);
   }
 
   async function download() {
-    setTemplateError('')
-    setDownloading(true)
+    setTemplateError("");
+    setDownloading(true);
     try {
-      await downloadTemplate(kind)
+      await downloadTemplate(kind);
     } catch (error) {
-      setTemplateError(getModulesError(error))
+      setTemplateError(getModulesError(error));
     } finally {
-      setDownloading(false)
+      setDownloading(false);
     }
   }
 
@@ -481,8 +1216,15 @@ function FileDropZone({
           <h4>{copy.title}</h4>
           <p>{copy.columns}</p>
         </div>
-        <Button type="button" variant="outline" size="sm" disabled={downloading} onClick={() => void download()}>
-          <Download aria-hidden="true" /> {downloading ? 'Descargando…' : 'Plantilla'}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={downloading}
+          onClick={() => void download()}
+        >
+          <Download aria-hidden="true" />{" "}
+          {downloading ? "Descargando…" : "Plantilla"}
         </Button>
       </div>
       {file ? (
@@ -492,20 +1234,32 @@ function FileDropZone({
             <strong>{file.name}</strong>
             <span>{formatBytes(file.size)}</span>
           </div>
-          <Button type="button" variant="outline" size="icon-sm" disabled={disabled} aria-label={`Quitar archivo de ${copy.title.toLowerCase()}`} onClick={() => onChange(null)}>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-sm"
+            disabled={disabled}
+            aria-label={`Quitar archivo de ${copy.title.toLowerCase()}`}
+            onClick={() => onChange(null)}
+          >
             <X aria-hidden="true" />
           </Button>
         </div>
       ) : (
         <label
           htmlFor={inputId}
-          className={`modules-dropzone ${dragging ? 'modules-dropzone-active' : ''}`}
-          onDragOver={(event) => { event.preventDefault(); if (!disabled) setDragging(true) }}
+          className={`modules-dropzone ${dragging ? "modules-dropzone-active" : ""}`}
+          onDragOver={(event) => {
+            event.preventDefault();
+            if (!disabled) setDragging(true);
+          }}
           onDragLeave={() => setDragging(false)}
           onDrop={drop}
         >
           <FolderUp aria-hidden="true" />
-          <span><strong>Selecciona</strong> o arrastra el archivo .xlsx</span>
+          <span>
+            <strong>Selecciona</strong> o arrastra el archivo .xlsx
+          </span>
         </label>
       )}
       <input
@@ -515,15 +1269,19 @@ function FileDropZone({
         accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         disabled={disabled}
         onChange={(event) => {
-          const selected = event.currentTarget.files?.[0]
+          const selected = event.currentTarget.files?.[0];
           // Reset so picking the same file again still triggers validation.
-          event.currentTarget.value = ''
-          if (selected) onChange(selected)
+          event.currentTarget.value = "";
+          if (selected) onChange(selected);
         }}
       />
-      {templateError && <p className="users-error" role="alert">{templateError}</p>}
+      {templateError && (
+        <p className="users-error" role="alert">
+          {templateError}
+        </p>
+      )}
     </div>
-  )
+  );
 }
 
 function PreviewSection({
@@ -533,38 +1291,58 @@ function PreviewSection({
   graceMinutes,
   onActivate,
 }: {
-  preview: ImportPreview
-  canActivate: boolean
-  nameMissing: boolean
-  graceMinutes: number | null
-  onActivate: () => void
+  preview: ImportPreview;
+  canActivate: boolean;
+  nameMissing: boolean;
+  graceMinutes: number | null;
+  onActivate: () => void;
 }) {
-  const { students, schedules } = preview
+  const { students, schedules } = preview;
   return (
     <Card className="users-card">
       <CardContent className="users-card-content">
         <StepHeading
           step={2}
           title="Vista previa"
-          description={preview.valid
-            ? 'Revisa los datos antes de activar el módulo.'
-            : 'Corrige los errores en los archivos y vuelve a validarlos.'}
+          description={
+            preview.valid
+              ? "Revisa los datos antes de activar el módulo."
+              : "Corrige los errores en los archivos y vuelve a validarlos."
+          }
         />
 
         <div className="stats-grid">
           <article className="stat-card">
-            <div className="stat-heading"><span>Estudiantes</span><Users aria-hidden="true" /></div>
+            <div className="stat-heading">
+              <span>Estudiantes</span>
+              <Users aria-hidden="true" />
+            </div>
             <strong>{students.total}</strong>
-            <p>{students.new} nuevos · {students.existing} existentes · {students.reactivated} reactivados</p>
+            <p>
+              {students.new} nuevos · {students.existing} existentes ·{" "}
+              {students.reactivated} reactivados
+            </p>
           </article>
           <article className="stat-card">
-            <div className="stat-heading"><span>Fechas de clase</span><CalendarDays aria-hidden="true" /></div>
+            <div className="stat-heading">
+              <span>Fechas de clase</span>
+              <CalendarDays aria-hidden="true" />
+            </div>
             <strong>{schedules.total}</strong>
-            <p>{graceMinutes === null ? 'Revisa el tiempo de gracia' : `Tolerancia de ${graceMinutes} min desde el inicio`}</p>
+            <p>
+              {graceMinutes === null
+                ? "Revisa el tiempo de gracia"
+                : `Tolerancia de ${graceMinutes} min desde el inicio`}
+            </p>
           </article>
           <article className="stat-card">
-            <div className="stat-heading"><span>Periodo</span><FolderClock aria-hidden="true" /></div>
-            <strong className="modules-stat-range">{formatDateRange(schedules.firstDate, schedules.lastDate)}</strong>
+            <div className="stat-heading">
+              <span>Periodo</span>
+              <FolderClock aria-hidden="true" />
+            </div>
+            <strong className="modules-stat-range">
+              {formatDateRange(schedules.firstDate, schedules.lastDate)}
+            </strong>
             <p>Primera y última fecha de clase</p>
           </article>
         </div>
@@ -572,19 +1350,29 @@ function PreviewSection({
         {preview.issuesTotal > 0 && (
           <IssueList
             tone="error"
-            title={`${preview.issuesTotal} ${preview.issuesTotal === 1 ? 'error debe corregirse' : 'errores deben corregirse'}`}
+            title={`${preview.issuesTotal} ${preview.issuesTotal === 1 ? "error debe corregirse" : "errores deben corregirse"}`}
             issues={preview.issues}
             hidden={preview.issuesTotal - preview.issues.length}
           />
         )}
         {preview.warnings.length > 0 && (
-          <IssueList tone="warning" title="Advertencias" issues={preview.warnings} hidden={0} />
+          <IssueList
+            tone="warning"
+            title="Advertencias"
+            issues={preview.warnings}
+            hidden={0}
+          />
         )}
 
         {(students.total > 0 || schedules.total > 0) && (
           <div className="modules-preview-grid">
-            <section className="modules-preview-panel" aria-label="Estudiantes a importar">
-              <h4>Estudiantes válidos <span>{students.total}</span></h4>
+            <section
+              className="modules-preview-panel"
+              aria-label="Estudiantes a importar"
+            >
+              <h4>
+                Estudiantes válidos <span>{students.total}</span>
+              </h4>
               <div className="users-table-wrap modules-table-scroll">
                 <table className="users-table modules-table">
                   <caption className="sr-only">Estudiantes a importar</caption>
@@ -599,12 +1387,22 @@ function PreviewSection({
                   <tbody>
                     {students.rows.map((student) => (
                       <tr key={student.registrationNo}>
-                        <td className="user-registration">{student.registrationNo}</td>
+                        <td className="user-registration">
+                          {student.registrationNo}
+                        </td>
                         <td>{student.fullName}</td>
                         <td className="modules-email">{student.email}</td>
                         <td>
-                          <span className={`modules-badge modules-badge-${student.status}`}>{STATUS_LABEL[student.status]}</span>
-                          {student.changed && <span className="modules-badge-note">Se actualizan sus datos</span>}
+                          <span
+                            className={`modules-badge modules-badge-${student.status}`}
+                          >
+                            {STATUS_LABEL[student.status]}
+                          </span>
+                          {student.changed && (
+                            <span className="modules-badge-note">
+                              Se actualizan sus datos
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -612,11 +1410,18 @@ function PreviewSection({
                 </table>
               </div>
             </section>
-            <section className="modules-preview-panel" aria-label="Fechas de clase a importar">
-              <h4>Fechas válidas <span>{schedules.total}</span></h4>
+            <section
+              className="modules-preview-panel"
+              aria-label="Fechas de clase a importar"
+            >
+              <h4>
+                Fechas válidas <span>{schedules.total}</span>
+              </h4>
               <div className="users-table-wrap modules-table-scroll">
                 <table className="users-table modules-table">
-                  <caption className="sr-only">Fechas de clase a importar</caption>
+                  <caption className="sr-only">
+                    Fechas de clase a importar
+                  </caption>
                   <thead>
                     <tr>
                       <th scope="col">Fecha</th>
@@ -627,7 +1432,9 @@ function PreviewSection({
                   <tbody>
                     {schedules.rows.map((schedule) => (
                       <tr key={schedule.classDate}>
-                        <td className="user-registration">{formatIsoDate(schedule.classDate)}</td>
+                        <td className="user-registration">
+                          {formatIsoDate(schedule.classDate)}
+                        </td>
                         <td>{schedule.startTime}</td>
                         <td>{schedule.endTime}</td>
                       </tr>
@@ -640,16 +1447,24 @@ function PreviewSection({
         )}
 
         <footer className="modules-preview-footer">
-          <p>{!preview.valid
-            ? 'No se puede activar el módulo mientras haya errores.'
-            : nameMissing
-              ? 'Escribe el nombre del módulo en el paso 1 para poder activarlo.'
-              : 'Los archivos son válidos. Al activar, se pedirá confirmación.'}</p>
-          <Button variant="destructive" disabled={!canActivate} onClick={onActivate}>Activar módulo</Button>
+          <p>
+            {!preview.valid
+              ? "No se puede activar el módulo mientras haya errores."
+              : nameMissing
+                ? "Escribe el nombre del módulo en el paso 1 para poder activarlo."
+                : "Los archivos son válidos. Al activar, se pedirá confirmación."}
+          </p>
+          <Button
+            variant="destructive"
+            disabled={!canActivate}
+            onClick={onActivate}
+          >
+            Activar módulo
+          </Button>
         </footer>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function IssueList({
@@ -658,15 +1473,20 @@ function IssueList({
   issues,
   hidden,
 }: {
-  tone: 'error' | 'warning'
-  title: string
-  issues: ImportIssue[]
-  hidden: number
+  tone: "error" | "warning";
+  title: string;
+  issues: ImportIssue[];
+  hidden: number;
 }) {
-  const Icon = tone === 'error' ? CircleAlert : TriangleAlert
+  const Icon = tone === "error" ? CircleAlert : TriangleAlert;
   return (
-    <section className={`modules-issues modules-issues-${tone}`} role={tone === 'error' ? 'alert' : 'status'}>
-      <h4><Icon aria-hidden="true" /> {title}</h4>
+    <section
+      className={`modules-issues modules-issues-${tone}`}
+      role={tone === "error" ? "alert" : "status"}
+    >
+      <h4>
+        <Icon aria-hidden="true" /> {title}
+      </h4>
       <div className="users-table-wrap modules-table-scroll modules-issues-scroll">
         <table className="users-table modules-table">
           <caption className="sr-only">{title}</caption>
@@ -682,55 +1502,97 @@ function IssueList({
             {issues.map((issue, index) => (
               <tr key={`${issue.file}-${issue.row}-${issue.column}-${index}`}>
                 <td>{FILE_COPY[issue.file].title}</td>
-                <td className="user-registration">{issue.row ?? '—'}</td>
-                <td>{issue.column ?? '—'}</td>
+                <td className="user-registration">{issue.row ?? "—"}</td>
+                <td>{issue.column ?? "—"}</td>
                 <td>{issue.message}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {hidden > 0 && <p className="modules-issues-more">Y {hidden} más. Corrige los anteriores y vuelve a validar.</p>}
+      {hidden > 0 && (
+        <p className="modules-issues-more">
+          Y {hidden} más. Corrige los anteriores y vuelve a validar.
+        </p>
+      )}
     </section>
-  )
+  );
 }
 
 function isComplete(files: Partial<ImportFiles>): files is ImportFiles {
-  return Boolean(files.students && files.schedules)
+  return Boolean(files.students && files.schedules);
 }
 
 function validateFile(file: File) {
-  if (!file.name.toLowerCase().endsWith('.xlsx')) return 'el archivo debe ser un Excel (.xlsx).'
-  if (file.size === 0) return 'el archivo está vacío.'
-  if (file.size > MAX_IMPORT_FILE_BYTES) return 'el archivo supera el máximo de 2 MB.'
-  return ''
+  if (!file.name.toLowerCase().endsWith(".xlsx"))
+    return "el archivo debe ser un Excel (.xlsx).";
+  if (file.size === 0) return "el archivo está vacío.";
+  if (file.size > MAX_IMPORT_FILE_BYTES)
+    return "el archivo supera el máximo de 2 MB.";
+  return "";
 }
 
 function formatBytes(bytes: number) {
-  return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return bytes < 1024 * 1024
+    ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+    : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat('es-BO', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(value))
+  return new Intl.DateTimeFormat("es-BO", {
+    dateStyle: "long",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 function getModulesError(error: unknown) {
-  if (!axios.isAxiosError(error)) return 'Ocurrió un error inesperado.'
-  const status = error.response?.status
-  const message = (error.response?.data as { message?: string | string[] } | undefined)?.message
-  const text = (Array.isArray(message) ? message.join(' ') : message ?? '').toLowerCase()
-  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
-  if (status === 403) return 'No tienes permisos para administrar módulos.'
-  if (status === 413) return 'Cada archivo puede pesar como máximo 2 MB.'
-  if (status === 422) return 'Los archivos contienen errores. Revisa la vista previa.'
-  if (status === 409) return 'Los datos cambiaron mientras se activaba el módulo. Vuelve a validar los archivos.'
-  if (status === 404 && text.includes('no active module')) return 'No hay un módulo activo.'
-  if (status === 400) {
-    if (text.includes('graceminutes')) return `El tiempo de gracia debe ser un número entero entre 0 y ${MAX_GRACE_MINUTES} minutos.`
-    if (text.includes('name')) return `Revisa el nombre del módulo (máximo ${MODULE_NAME_MAX} caracteres).`
-    if (text.includes('xlsx') || text.includes('file')) return 'Ambos archivos deben ser Excel (.xlsx) válidos.'
-    return 'La solicitud no es válida. Revisa los datos e inténtalo de nuevo.'
+  if (!axios.isAxiosError(error)) return "Ocurrió un error inesperado.";
+  const status = error.response?.status;
+  const message = (
+    error.response?.data as { message?: string | string[] } | undefined
+  )?.message;
+  const detail = Array.isArray(message) ? message.join(" ") : (message ?? "");
+  const text = detail.toLowerCase();
+  if (status === 401) return "Tu sesión expiró. Inicia sesión nuevamente.";
+  if (status === 403) return "No tienes permisos para administrar módulos.";
+  if (status === 413) return "Cada archivo puede pesar como máximo 2 MB.";
+  if (status === 422) {
+    if (
+      text.includes("uploaded files") ||
+      text.includes("archivos contienen errores")
+    )
+      return "Los archivos contienen errores. Revisa la vista previa.";
+    return detail || "Los datos de la clase no son válidos.";
   }
-  if (!status) return 'No se pudo conectar con el servidor.'
-  return 'No se pudo completar la operación. Inténtalo nuevamente.'
+  if (status === 409) {
+    if (text.includes("data changed while activating"))
+      return "Los datos cambiaron durante la activación. Vuelve a validar los archivos.";
+    if (text.includes("ya existe una clase programada"))
+      return "Ya hay una clase en esa fecha. Elige otra fecha.";
+    if (text.includes("asistencias registradas"))
+      return "No se puede cambiar esta clase porque ya tiene asistencias registradas.";
+    if (text.includes("already enrolled"))
+      return "Este estudiante ya está inscrito en el módulo activo.";
+    if (text.includes("email is already used"))
+      return "Ese correo ya está asociado a otro estudiante.";
+    if (text.includes("registration number belongs"))
+      return "Ese número de registro pertenece a una cuenta administradora.";
+    return detail || "El cambio entra en conflicto con otros datos del módulo.";
+  }
+  if (status === 404 && text.includes("no active module"))
+    return "No hay un módulo activo.";
+  if (status === 400) {
+    if (text.includes("graceminutes"))
+      return `El tiempo de gracia debe ser un número entero entre 0 y ${MAX_GRACE_MINUTES} minutos.`;
+    if (text.includes("name"))
+      return `Revisa el nombre del módulo (máximo ${MODULE_NAME_MAX} caracteres).`;
+    if (text.includes("xlsx") || text.includes("file"))
+      return "Ambos archivos deben ser Excel (.xlsx) válidos.";
+    return (
+      detail ||
+      "La solicitud no es válida. Revisa los datos e inténtalo de nuevo."
+    );
+  }
+  if (!status) return "No se pudo conectar con el servidor.";
+  return detail || "No se pudo completar la operación. Inténtalo nuevamente.";
 }

@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,18 +7,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { ChevronsUpDownIcon, LogOutIcon, UserRoundIcon } from "lucide-react"
+} from "@/components/ui/sidebar";
+import { ChevronsUpDownIcon, LogOutIcon, UserRoundIcon } from "lucide-react";
 
 function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?"
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
 }
 
 export function NavUser({
@@ -26,26 +26,35 @@ export function NavUser({
   onLogout,
   onProfile,
 }: {
-  user: { name: string; detail: string }
-  onLogout: () => void
-  onProfile: () => void
+  user: { name: string; detail: string };
+  onLogout: () => void;
+  onProfile: () => void;
 }) {
-  const { isMobile } = useSidebar()
-  const userInitials = initials(user.name)
+  const { isMobile } = useSidebar();
+  const userInitials = initials(user.name);
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<SidebarMenuButton size="lg" className="aria-expanded:bg-muted" />}
+            render={
+              <SidebarMenuButton
+                size="lg"
+                className="aria-expanded:bg-muted aria-expanded:text-foreground"
+              />
+            }
           >
             <Avatar>
               <AvatarFallback>{userInitials}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-xs">{user.detail}</span>
+              <span className="truncate font-semibold text-sidebar-foreground group-aria-expanded/menu-button:text-foreground">
+                {user.name}
+              </span>
+              <span className="truncate text-xs text-blue-200/80 group-aria-expanded/menu-button:text-muted-foreground">
+                {user.detail}
+              </span>
             </div>
             <ChevronsUpDownIcon className="ml-auto size-4" />
           </DropdownMenuTrigger>
@@ -73,13 +82,17 @@ export function NavUser({
               <UserRoundIcon />
               Mi perfil
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onLogout}>
-              <LogOutIcon />
+            <DropdownMenuItem
+              variant="destructive"
+              className="font-semibold hover:bg-red-100 focus:bg-red-100"
+              onClick={onLogout}
+            >
+              <LogOutIcon className="size-4" />
               Cerrar sesión
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

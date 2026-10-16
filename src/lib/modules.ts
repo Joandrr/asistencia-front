@@ -14,6 +14,53 @@ export interface ActiveModuleSummary {
   lastDate: string | null
 }
 
+export interface ModuleSummary extends ActiveModuleSummary {
+  status: 'active' | 'closed'
+  isActive: boolean
+}
+
+export interface ModuleStudent {
+  id: string
+  registrationNo: string
+  fullName: string | null
+  email: string | null
+  assignedAt: string
+}
+
+export interface ModuleSchedule {
+  id: string
+  classDate: string
+  startTime: string
+  endTime: string
+  graceTime: string
+}
+
+export async function getModules() {
+  const { data } = await api.get<ModuleSummary[]>('/modules')
+  return data
+}
+
+export async function getModuleStudents(moduleId: string) {
+  const { data } = await api.get<{ module: { id: string; name: string; isActive: boolean }; students: ModuleStudent[] }>(`/modules/${moduleId}/students`)
+  return data
+}
+
+export async function getActiveModuleSchedules() {
+  const { data } = await api.get<{ module: { id: string; name: string }; schedules: ModuleSchedule[] }>('/modules/active/schedules')
+  return data
+}
+
+export async function updateActiveSchedule(input: { id: string; classDate: string; startTime: string; endTime: string }) {
+  const { id, ...body } = input
+  const { data } = await api.patch<{ schedule: ModuleSchedule }>(`/modules/active/schedules/${id}`, body)
+  return data
+}
+
+export async function addStudentToActiveModule(input: { registrationNo: string; fullName: string; email: string }) {
+  const { data } = await api.post<{ status: ImportStudentStatus; student: ModuleStudent; module: { id: string; name: string } }>('/admin/students', input)
+  return data
+}
+
 export interface ImportIssue {
   file: ImportFileKind
   row: number | null
