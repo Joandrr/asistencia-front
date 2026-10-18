@@ -25,3 +25,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Terraform / OpenTofu local state and downloaded providers
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Local Terraform variables and private keys
+*.tfvars
+*.tfvars.json
+*.pem
